@@ -6948,8 +6948,6 @@ let
 
   mythes = callPackage ../development/libraries/mythes { };
 
-  nanomsg = callPackage ../development/libraries/nanomsg { };
-
   ncurses = callPackage ../development/libraries/ncurses {
     unicode = system != "i686-cygwin";
   };
