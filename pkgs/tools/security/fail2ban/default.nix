@@ -1,6 +1,6 @@
-{ stdenv, fetchurl, pythonPackages, unzip, gamin }:
+{ stdenv, fetchurl, python, pythonPackages, unzip, systemd, gamin }:
 
-let version = "0.8.12"; in
+let version = "0.9"; in
 
 pythonPackages.buildPythonPackage {
   name = "fail2ban-${version}";
@@ -9,12 +9,12 @@ pythonPackages.buildPythonPackage {
   src = fetchurl {
     url    = "https://github.com/fail2ban/fail2ban/zipball/${version}";
     name   = "fail2ban-${version}.zip";
-    sha256 = "17cassfn3gdgw530g7gh9fvffsixfb30zamzlfmx7s5x80rnqd3k";
+    sha256 = "0dawl0vvdvpnkg1hc4l0c8sj8ikcr2l48d6khfx0174nq8yfcg93";
   };
 
   buildInputs = [ unzip ];
 
-  pythonPath = [ gamin ];
+  pythonPath = [ systemd python.modules.sqlite3 gamin ];
 
   preConfigure = ''
     substituteInPlace setup.cfg \

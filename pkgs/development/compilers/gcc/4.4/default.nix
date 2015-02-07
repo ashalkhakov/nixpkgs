@@ -246,11 +246,12 @@ stdenv.mkDerivation ({
       enableMultilib version; };
 
   # ghdl does not build fine with parallel building
-  enableParallelBuilding = !langVhdl && !langAda;
+  # http://gcc.gnu.org/bugzilla/show_bug.cgi?id=46173
+  #enableParallelBuilding = !langVhdl && !langAda;
 
   meta = {
     homepage = http://gcc.gnu.org/;
-    license = "GPLv3+";  # runtime support libraries are typically LGPLv3+
+    license = stdenv.lib.licenses.gpl3Plus;  # runtime support libraries are typically LGPLv3+
     description = "GNU Compiler Collection, version ${version}";
 
     longDescription = ''
@@ -301,7 +302,7 @@ stdenv.mkDerivation ({
 
   meta = {
     homepage = "http://ghdl.free.fr/";
-    license = "GPLv2+";
+    license = stdenv.lib.licenses.gpl2Plus;
     description = "Complete VHDL simulator, using the GCC technology (gcc ${version})";
     maintainers = with stdenv.lib.maintainers; [viric];
     platforms = with stdenv.lib.platforms; linux;

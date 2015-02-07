@@ -93,6 +93,7 @@ PATH=
 for i in $NIX_GCC @initialPath@; do
     if [ "$i" = / ]; then i=; fi
     addToSearchPath PATH $i/bin
+    addToSearchPath PATH $i/sbin
 done
 
 if [ "$NIX_DEBUG" = 1 ]; then
@@ -102,6 +103,7 @@ fi
 
 # Execute the pre-hook.
 export SHELL=@shell@
+export CONFIG_SHELL="$SHELL"
 if [ -z "$shell" ]; then export shell=@shell@; fi
 runHook preHook
 
@@ -119,6 +121,7 @@ fi
 
 # Ensure that the given directories exists.
 ensureDir() {
+    echo "warning: ‘ensureDir’ is deprecated; use ‘mkdir’ instead" >&2
     local dir
     for dir in "$@"; do
         if ! [ -x "$dir" ]; then mkdir -p "$dir"; fi
@@ -293,6 +296,18 @@ stripDirs() {
     fi
 }
 
+# PaX-mark binaries
+paxmark() {
+    local flags="$1"
+    shift
+
+    if [ -z "@needsPax@" ]; then
+        return
+    fi
+
+    paxctl -c "$@"
+    paxctl -zex -${flags} "$@"
+}
 
 ######################################################################
 # Textual substitution functions.
@@ -304,9 +319,11 @@ substitute() {
 
     local -a params=("$@")
 
-    local n p pattern replacement varName
+    local n p pattern replacement varName content
 
-    local content="$(cat $input)"
+    # a slightly hacky way to keep newline at the end
+    content="$(cat $input; echo -n X)"
+    content="${content%X}"
 
     for ((n = 2; n < ${#params[*]}; n += 1)); do
         p=${params[$n]}
@@ -877,7 +894,7 @@ genericBuild() {
     if [ -z "$phases" ]; then
         phases="$prePhases unpackPhase patchPhase $preConfigurePhases \
             configurePhase $preBuildPhases buildPhase checkPhase \
-            $preInstallPhases installPhase fixupPhase installCheckPhase \
+            $preInstallPhases installPhase $preFixupPhases fixupPhase installCheckPhase \
             $preDistPhases distPhase $postPhases";
     fi
 

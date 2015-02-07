@@ -20,7 +20,7 @@
   <xsl:template match="/fontconfig">
 
     <fontconfig>
-      <xsl:copy-of select="child::node()[name() != 'dir' and name() != 'cachedir' and name() != 'include']" />
+      <xsl:apply-templates select="child::node()[name() != 'dir' and name() != 'cachedir' and name() != 'include']" />
 
       <include ignore_missing="yes">/etc/fonts/conf.d</include>
       <include><xsl:value-of select="$fontconfig" />/etc/fonts/conf.d</include>
@@ -32,9 +32,20 @@
         <dir><xsl:value-of select="." /></dir>
         <xsl:text>&#0010;</xsl:text>
       </xsl:for-each>
+      <dir prefix="xdg">fonts</dir>
+      <!-- the following element will be removed in the future -->
+      <dir>~/.fonts</dir>
 
     </fontconfig>
 
+  </xsl:template>
+
+
+  <!-- New fontconfig >=2.11 doesn't like xml:space added by xsl:copy-of -->
+  <xsl:template match="node()|@*">
+    <xsl:copy>
+      <xsl:apply-templates select="node()|@*[name() != 'xml:space']"/>
+    </xsl:copy>
   </xsl:template>
 
 </xsl:stylesheet>

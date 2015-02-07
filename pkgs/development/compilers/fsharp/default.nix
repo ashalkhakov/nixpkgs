@@ -1,17 +1,19 @@
-{ stdenv, fetchgit, mono, pkgconfig, autoconf, automake, which }:
+{ stdenv, fetchurl, mono, pkgconfig, autoconf, automake, which }:
 
 stdenv.mkDerivation rec {
   name = "fsharp-${version}";
-  version = "3.0";
+  version = "3.1.1.26";
 
-  src = fetchgit {
-    url = "https://github.com/fsharp/fsharp";
-    rev = "refs/heads/fsharp_30";
-    sha256 = "59639c76ff401c9ddb1af7a2f5a53a5aef4ec0d62317aeb33429f3eb009f771f";
+  src = fetchurl {
+    url = "https://github.com/fsharp/fsharp/archive/${version}.tar.gz";
+    sha256 = "1yz3cq8ys6ryc6x3a0qyc100swrg2q3az8x8in1lp7c2c0l02zb2";
   };
 
   buildInputs = [ mono pkgconfig autoconf automake which ];
-  configurePhase = "./autogen.sh --prefix $out";
+  configurePhase = ''
+    substituteInPlace ./autogen.sh --replace "/usr/bin/env sh" "/bin/sh"
+    ./autogen.sh --prefix $out
+  '';
 
   # Make sure the executables use the right mono binary,
   # and set up some symlinks for backwards compatibility.

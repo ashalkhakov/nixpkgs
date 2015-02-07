@@ -38,12 +38,12 @@ stdenv.mkDerivation rec {
   buildPhase = ''
     patchShebangs .
     mkdir -p "$out"
-    sed -e "s|python_lib_dir = .*|python_lib_dir = \"$out/lib/${pythonFull.python.libPrefix}/site-packages\"|" -i SConstruct
+    sed -e "s|python_lib_dir = .*|python_lib_dir = \"$out/lib/${pythonFull.libPrefix}/site-packages\"|" -i SConstruct
     scons prefix="$out" leapfetch=no gpsd_user=${gpsdUser} gpsd_group=${gpsdGroup} \
         systemd=yes udevdir="$out/lib/udev" chrpath=no
   '';
 
-  doCheck = true;
+  doCheck = false;
 
   checkPhase = ''
     export LD_LIBRARY_PATH="$PWD"

@@ -1,11 +1,12 @@
 { stdenv, fetchurl, pcsclite, pkgconfig, libusb1, perl }:
+
 stdenv.mkDerivation rec {
-  version = "1.4.15";
+  version = "1.4.18";
   name = "ccid-${version}";
 
   src = fetchurl {
     url = "http://ftp.de.debian.org/debian/pool/main/c/ccid/ccid_${version}.orig.tar.bz2";
-    sha256 = "02lrdmqlw2ilbmgcpi2h7w741p025c10frxdn5w3wnzi8qi1hdjl";
+    sha256 = "1aj14lkmfaxkhk5swqfgn2x18j7fijxs0jnxnx9cdc9f5mxaknsz";
   };
 
   patchPhase = ''
@@ -18,11 +19,11 @@ stdenv.mkDerivation rec {
 
   buildInputs = [ pcsclite pkgconfig libusb1 ];
 
-  meta = {
+  meta = with stdenv.lib; {
     description = "ccid drivers for pcsclite";
     homepage = http://pcsclite.alioth.debian.org/;
-    license = "GPLv2+";
-    maintainers = with stdenv.lib.maintainers; [viric];
-    platforms = with stdenv.lib.platforms; linux;
+    license = licenses.gpl2Plus;
+    maintainers = with maintainers; [ viric wkennington ];
+    platforms = with platforms; linux;
   };
 }

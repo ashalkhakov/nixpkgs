@@ -28,6 +28,10 @@ let
   nixConfig = ''
     CONFIG_PREFIX "$out"
     CONFIG_INSTALL_NO_USR y
+
+    # Use the external mount.cifs program.
+    CONFIG_FEATURE_MOUNT_CIFS n
+    CONFIG_FEATURE_MOUNT_HELPERS y
   '';
 
   staticConfig = stdenv.lib.optionalString enableStatic ''
@@ -37,11 +41,11 @@ let
 in
 
 stdenv.mkDerivation rec {
-  name = "busybox-1.21.1";
+  name = "busybox-1.22.1";
 
   src = fetchurl {
     url = "http://busybox.net/downloads/${name}.tar.bz2";
-    sha256 = "00qk938q90jv14mxmadm8pgs3jymkknc6xicw4512mn85s8y0nyd";
+    sha256 = "12v7nri79v8gns3inmz4k24q7pcnwi00hybs0wddfkcy1afh42xf";
   };
 
   configurePhase = ''
@@ -49,8 +53,8 @@ stdenv.mkDerivation rec {
     ${configParser}
     cat << EOF | parseconfig
     ${staticConfig}
-    ${extraConfig}
     ${nixConfig}
+    ${extraConfig}
     $extraCrossConfig
     EOF
     make oldconfig
@@ -70,7 +74,7 @@ stdenv.mkDerivation rec {
   meta = {
     description = "Tiny versions of common UNIX utilities in a single small executable";
     homepage = http://busybox.net/;
-    license = "GPLv2";
+    license = stdenv.lib.licenses.gpl2;
     maintainers = with stdenv.lib.maintainers; [viric];
     platforms = with stdenv.lib.platforms; linux;
   };

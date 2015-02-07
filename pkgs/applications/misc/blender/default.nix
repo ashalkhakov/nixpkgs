@@ -1,35 +1,47 @@
-{ stdenv, fetchurl, SDL, boost, cmake, ffmpeg, gettext, glew
-, ilmbase, jackaudio, libXi, libjpeg, libpng, libsamplerate, libsndfile
+{ stdenv, lib, fetchurl, fetchpatch, SDL, boost, cmake, ffmpeg, gettext, glew
+, ilmbase, libXi, libjpeg, libpng, libsamplerate, libsndfile
 , libtiff, mesa, openal, opencolorio, openexr, openimageio, openjpeg, python
-, zlib
+, zlib, fftw
+, jackaudioSupport ? false, jack2
+, cudaSupport ? false, cudatoolkit6
 }:
 
+with lib;
+
 stdenv.mkDerivation rec {
-  name = "blender-2.69";
+  name = "blender-2.72b";
 
   src = fetchurl {
     url = "http://download.blender.org/source/${name}.tar.gz";
-    sha256 = "02ffakkbax1kl4ycakxq20yp9hmw1qj1qndjjqxnhhhdxifpyjn9";
+    sha256 = "0ixz8h3c08p4f84x8r85nzddwvc0h5lw1ci8gdg2x3m2mw2cfdj4";
   };
 
-  buildInputs = [
-    SDL boost cmake ffmpeg gettext glew ilmbase jackaudio libXi
-    libjpeg libpng libsamplerate libsndfile libtiff mesa openal
-    opencolorio openexr openimageio openjpeg python zlib
-  ];
+  buildInputs =
+    [ SDL boost cmake ffmpeg gettext glew ilmbase libXi
+      libjpeg libpng libsamplerate libsndfile libtiff mesa openal
+      opencolorio openexr openimageio /* openjpeg */ python zlib fftw
+    ]
+    ++ optional jackaudioSupport jack2
+    ++ optional cudaSupport cudatoolkit6;
 
+  postUnpack =
+    ''
+      substituteInPlace */doc/manpage/blender.1.py --replace /usr/bin/python ${python}/bin/python3
+    '';
 
-  cmakeFlags = [
-    "-DOPENEXR_INC=${openexr}/include/OpenEXR"
-    "-DWITH_OPENCOLLADA=OFF"
-    "-DWITH_CODEC_FFMPEG=ON"
-    "-DWITH_CODEC_SNDFILE=ON"
-    "-DWITH_JACK=ON"
-    "-DWITH_INSTALL_PORTABLE=OFF"
-    "-DPYTHON_LIBRARY=python${python.majorVersion}m"    
-    "-DPYTHON_LIBPATH=${python}/lib"
-    "-DPYTHON_INCLUDE_DIR=${python}/include/python${python.majorVersion}m"
-  ];
+  cmakeFlags =
+    [ "-DWITH_OPENCOLLADA=OFF"
+      "-DWITH_MOD_OCEANSIM=ON"
+      "-DWITH_CODEC_FFMPEG=ON"
+      "-DWITH_CODEC_SNDFILE=ON"
+      "-DWITH_INSTALL_PORTABLE=OFF"
+      "-DPYTHON_LIBRARY=python${python.majorVersion}m"
+      "-DPYTHON_LIBPATH=${python}/lib"
+      "-DPYTHON_INCLUDE_DIR=${python}/include/python${python.majorVersion}m"
+      "-DPYTHON_VERSION=${python.majorVersion}"
+    ]
+    ++ optional jackaudioSupport "-DWITH_JACK=ON"
+    ++ optional cudaSupport "-DWITH_CYCLES_CUDA_BINARIES=ON";
 
   NIX_CFLAGS_COMPILE = "-I${ilmbase}/include/OpenEXR -I${python}/include/${python.libPrefix}m";
 
@@ -43,6 +55,5 @@ stdenv.mkDerivation rec {
     license = licenses.gpl2Plus;
     platforms = platforms.linux;
     maintainers = [ maintainers.goibhniu ];
-
   };
 }

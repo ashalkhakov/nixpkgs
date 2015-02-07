@@ -1,13 +1,13 @@
-{ config, pkgs }:
+{ config, lib }:
 
-with pkgs.lib;
+with lib;
 
 let
 
   checkService = v:
     let assertValueOneOf = name: values: attr:
-          let val = getAttr name attr;
-          in optional ( hasAttr name attr && !elem val values) "Systemd service field `${name}' cannot have value `${val}'.";
+          let val = attr.${name};
+          in optional (attr ? ${name} && !elem val values) "Systemd service field `${name}' cannot have value `${val}'.";
         checkType = assertValueOneOf "Type" ["simple" "forking" "oneshot" "dbus" "notify" "idle"];
         checkRestart = assertValueOneOf "Restart" ["no" "on-success" "on-failure" "on-abort" "always"];
         errors = concatMap (c: c v) [checkType checkRestart];
@@ -28,7 +28,7 @@ let
 
 in rec {
 
-  unitOptions = {
+  sharedOptions = {
 
     enable = mkOption {
       default = true;
@@ -41,11 +41,36 @@ in rec {
       '';
     };
 
-    baseUnit = mkOption {
-      type = types.nullOr types.path;
-      default = null;
-      description = "Path to an upstream unit file on which the NixOS unit configuration will be based.";
+    requiredBy = mkOption {
+      default = [];
+      type = types.listOf types.string;
+      description = "Units that require (i.e. depend on and need to go down with) this unit.";
     };
+
+    wantedBy = mkOption {
+      default = [];
+      type = types.listOf types.string;
+      description = "Units that want (i.e. depend on) this unit.";
+    };
+
+  };
+
+  concreteUnitOptions = sharedOptions // {
+
+    text = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      description = "Text of this systemd unit.";
+    };
+
+    unit = mkOption {
+      internal = true;
+      description = "The generated unit.";
+    };
+
+  };
+
+  commonUnitOptions = sharedOptions // {
 
     description = mkOption {
       default = "";
@@ -115,18 +140,6 @@ in rec {
       '';
     };
 
-    requiredBy = mkOption {
-      default = [];
-      type = types.listOf types.str;
-      description = "Units that require (i.e. depend on and need to go down with) this unit.";
-    };
-
-    wantedBy = mkOption {
-      default = [];
-      type = types.listOf types.str;
-      description = "Units that want (i.e. depend on) this unit.";
-    };
-
     unitConfig = mkOption {
       default = {};
       example = { RequiresMountsFor = "/data"; };
@@ -152,7 +165,7 @@ in rec {
   };
 
 
-  serviceOptions = unitOptions // {
+  serviceOptions = commonUnitOptions // {
 
     environment = mkOption {
       default = {};
@@ -217,6 +230,15 @@ in rec {
       '';
     };
 
+    reload = mkOption {
+      type = types.lines;
+      default = "";
+      description = ''
+        Shell commands executed when the service's main process
+        is reloaded.
+      '';
+    };
+
     preStop = mkOption {
       type = types.lines;
       default = "";
@@ -240,6 +262,17 @@ in rec {
       description = ''
         Whether the service should be restarted during a NixOS
         configuration switch if its definition has changed.
+      '';
+    };
+
+    reloadIfChanged = mkOption {
+      type = types.bool;
+      default = false;
+      description = ''
+        Whether the service should be reloaded during a NixOS
+        configuration switch if its definition has changed.  If
+        enabled, the value of <option>restartIfChanged</option> is
+        ignored.
       '';
     };
 
@@ -275,7 +308,7 @@ in rec {
   };
 
 
-  socketOptions = unitOptions // {
+  socketOptions = commonUnitOptions // {
 
     listenStreams = mkOption {
       default = [];
@@ -302,7 +335,7 @@ in rec {
   };
 
 
-  timerOptions = unitOptions // {
+  timerOptions = commonUnitOptions // {
 
     timerConfig = mkOption {
       default = {};
@@ -321,7 +354,24 @@ in rec {
   };
 
 
-  mountOptions = unitOptions // {
+  pathOptions = commonUnitOptions // {
+
+    pathConfig = mkOption {
+      default = {};
+      example = { PathChanged = "/some/path"; Unit = "changedpath.service"; };
+      type = types.attrsOf unitOption;
+      description = ''
+        Each attribute in this set specifies an option in the
+        <literal>[Path]</literal> section of the unit.  See
+        <citerefentry><refentrytitle>systemd.path</refentrytitle>
+        <manvolnum>5</manvolnum></citerefentry> for details.
+      '';
+    };
+
+  };
+
+
+  mountOptions = commonUnitOptions // {
 
     what = mkOption {
       example = "/dev/sda1";
@@ -365,7 +415,7 @@ in rec {
     };
   };
 
-  automountOptions = unitOptions // {
+  automountOptions = commonUnitOptions // {
 
     where = mkOption {
       example = "/mnt";
@@ -388,5 +438,7 @@ in rec {
       '';
     };
   };
+
+  targetOptions = commonUnitOptions;
 
 }

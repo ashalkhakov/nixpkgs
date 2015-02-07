@@ -1,7 +1,8 @@
-{ stdenv, fetchurl, pkgconfig, intltool, flex, bison, autoreconfHook
+{ stdenv, fetchurl, pkgconfig, intltool, flex, bison, autoreconfHook, substituteAll
 , python, libxml2Python, file, expat, makedepend
 , libdrm, xorg, wayland, udev, llvm, libffi
 , libvdpau, libelf
+, grsecEnabled
 , enableTextureFloats ? false # Texture floats are patented, see docs/patents.txt
 , enableExtraFeatures ? false # not maintained
 }:
@@ -23,8 +24,8 @@ else
 */
 
 let
-  version = "9.2.5";
-  # this is the default search path for DRI drivers (note: X server no longer introduces an overriding env var)
+  version = "10.2.6";
+  # this is the default search path for DRI drivers
   driverLink = "/run/opengl-driver" + stdenv.lib.optionalString stdenv.isi686 "-32";
 in
 with { inherit (stdenv.lib) optional optionals optionalString; };
@@ -34,21 +35,28 @@ stdenv.mkDerivation {
 
   src =  fetchurl {
     url = "ftp://ftp.freedesktop.org/pub/mesa/${version}/MesaLib-${version}.tar.bz2";
-    sha256 = "1w3bxclgwl2hwyxk3za7dbdakb8jsya7afck35cz0v8pxppvjsml";
+    sha256 = "01n8ib190s12m8hiiyi4wfm9jhkbqjd769npjwvf965smp918cqr";
   };
 
   prePatch = "patchShebangs .";
 
   patches = [
     ./static-gallium.patch
-    ./dricore-gallium.patch
-    ./werror-wundef.patch
-  ];
+    ./glx_ro_text_segm.patch # fix for grsecurity/PaX
+   # TODO: revive ./dricore-gallium.patch when it gets ported (from Ubuntu),
+   #  as it saved ~35 MB in $drivers; watch https://launchpad.net/ubuntu/+source/mesa/+changelog
+  ] ++ optional stdenv.isLinux
+      (substituteAll {
+        src = ./dlopen-absolute-paths.diff;
+        inherit udev;
+      });
 
   # Change the search path for EGL drivers from $drivers/* to driverLink
   postPatch = ''
     sed '/D_EGL_DRIVER_SEARCH_DIR=/s,EGL_DRIVER_INSTALL_DIR,${driverLink}/lib/egl,' \
       -i src/egl/main/Makefile.am
+  '' + /* work around RTTI LLVM problems */ ''
+    patch -R -p1 < ${./rtti.patch}
   '';
 
   outputs = ["out" "drivers" "osmesa"];
@@ -62,7 +70,7 @@ stdenv.mkDerivation {
     "--enable-glx-tls"
     "--enable-shared-glapi" "--enable-shared-gallium"
     "--enable-driglx-direct" # seems enabled anyway
-    "--enable-gallium-llvm" "--with-llvm-shared-libs"
+    "--enable-gallium-llvm" "--enable-llvm-shared-libs"
     "--enable-xa" # used in vmware driver
     "--enable-gles1" "--enable-gles2"
     "--enable-vdpau"
@@ -70,14 +78,15 @@ stdenv.mkDerivation {
 
     "--with-dri-drivers=i965,r200,radeon"
     "--with-gallium-drivers=i915,nouveau,r300,r600,svga,swrast,radeonsi"
-    "--with-egl-platforms=x11,wayland,drm" "--enable-gbm" "--enable-shared-glapi"
+    "--with-egl-platforms=x11,wayland,drm" "--enable-gbm"
   ]
     ++ optional enableTextureFloats "--enable-texture-float"
     ++ optionals enableExtraFeatures [
       "--enable-openvg" "--enable-gallium-egl" # not needed for EGL in Gallium, but OpenVG might be useful
       #"--enable-xvmc" # tests segfault with 9.1.{1,2,3}
       #"--enable-opencl" # ToDo: opencl seems to need libclc for clover
-    ];
+    ]
+    ++ optional grsecEnabled "--enable-glx-rts"; # slight performance degradation, enable only for grsec
 
   nativeBuildInputs = [ pkgconfig python makedepend file flex bison ];
 
@@ -86,15 +95,15 @@ stdenv.mkDerivation {
     ;
   buildInputs = with xorg; [
     autoreconfHook intltool expat libxml2Python llvm
-    libXfixes glproto dri2proto libX11 libXext libxcb libXt
+    glproto dri2proto dri3proto presentproto
+    libX11 libXext libxcb libXt libXfixes libxshmfence
     libffi wayland libvdpau libelf
   ] ++ optionals enableExtraFeatures [ /*libXvMC*/ ]
     ++ optional stdenv.isLinux udev
     ;
 
   enableParallelBuilding = true;
-  #doCheck = true; # https://bugs.freedesktop.org/show_bug.cgi?id=67672,
-    # also, 10.* links bad due to some RTTI problem
+  #doCheck = true; # https://bugs.freedesktop.org/show_bug.cgi?id=67672
 
   # move gallium-related stuff to $drivers, so $out doesn't depend on LLVM;
   #   also move libOSMesa to $osmesa, as it's relatively big

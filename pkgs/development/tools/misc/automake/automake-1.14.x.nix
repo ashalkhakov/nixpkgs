@@ -25,9 +25,10 @@ stdenv.mkDerivation rec {
   dontPatchShebangs = true;
 
   meta = {
+    branch = "1.14";
     homepage = "http://www.gnu.org/software/automake/";
     description = "GNU standard-compliant makefile generator";
-    license = "GPLv2+";
+    license = stdenv.lib.licenses.gpl2Plus;
 
     longDescription = ''
       GNU Automake is a tool for automatically generating

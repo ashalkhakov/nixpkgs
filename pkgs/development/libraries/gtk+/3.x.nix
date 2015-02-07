@@ -9,8 +9,8 @@ assert xineramaSupport -> xlibs.libXinerama != null;
 assert cupsSupport -> cups != null;
 
 let
-  ver_maj = "3.10";
-  ver_min = "7";
+  ver_maj = "3.12";
+  ver_min = "2";
   version = "${ver_maj}.${ver_min}";
 in
 stdenv.mkDerivation rec {
@@ -18,10 +18,8 @@ stdenv.mkDerivation rec {
 
   src = fetchurl {
     url = "mirror://gnome/sources/gtk+/${ver_maj}/gtk+-${version}.tar.xz";
-    sha256 = "09wlsim4immrws0fyvpk03sspsljcsgybrwp73scycah70axxsdp";
+    sha256 = "1l45nd7ln2pnrf99vdki3l7an5wrzkbak11hnnj1w6r3fkm4xmv1";
   };
-
-  enableParallelBuilding = true;
 
   nativeBuildInputs = [ pkgconfig gettext gobjectIntrospection perl ];
 
@@ -33,7 +31,19 @@ stdenv.mkDerivation rec {
     ++ optional xineramaSupport libXinerama
     ++ optional cupsSupport cups;
 
+  # demos fail to install, no idea where's the problem
+  preConfigure = "sed '/^SRC_SUBDIRS /s/demos//' -i Makefile.in";
+
+  enableParallelBuilding = true;
+
   postInstall = "rm -rf $out/share/gtk-doc";
+
+  passthru = {
+    gtkExeEnvPostBuild = ''
+      rm $out/lib/gtk-3.0/3.0.0/immodules.cache
+      $out/bin/gtk-query-immodules-3.0 $out/lib/gtk-3.0/3.0.0/immodules/*.so > $out/lib/gtk-3.0/3.0.0/immodules.cache
+    ''; # workaround for bug of nix-mode for Emacs */ '';
+  };
 
   meta = {
     description = "A multi-platform toolkit for creating graphical user interfaces";
@@ -51,7 +61,7 @@ stdenv.mkDerivation rec {
 
     homepage = http://www.gtk.org/;
 
-    license = "LGPLv2+";
+    license = stdenv.lib.licenses.lgpl2Plus;
 
     maintainers = with stdenv.lib.maintainers; [ urkud raskin vcunat];
     platforms = stdenv.lib.platforms.all;

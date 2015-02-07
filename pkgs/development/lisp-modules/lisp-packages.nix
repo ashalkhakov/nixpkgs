@@ -19,13 +19,14 @@ let lispPackages = rec {
 
   clx = buildLispPackage rec {
     baseName = "clx";
-    version = "2013-09";
+    version = "2014-11-03";
     description = "X11 bindings for Common Lisp";
     deps = [];
     src = pkgs.fetchgit {
       url = "https://github.com/sharplispers/clx.git";
-      rev = "e2b762ac93d78d6eeca4f36698c8dfd1537ce998";
-      sha256 = "0jcrmlaayz7m8ixgriq7id3pdklyk785qvpcxdpcp4aqnfiiqhij";
+      rev = "c2910c5d707a97e87b354de3f2fbe2ae038e9bc8";
+      sha256 = "1jk0hfk6rb9cf58xhqq7vaisj63k3x9jpj06wqpa32y5ppjcyijw";
+      name = "clx-git-checkout-${version}";
     };
   };
 
@@ -37,19 +38,17 @@ let lispPackages = rec {
     src = pkgs.fetchdarcs {
       url = "http://common-lisp.net/project/iterate/darcs/iterate";
       sha256 = "0m3q0s7h5s8varwx584m2akgdslj14df7kg4w1bj1fbgzsag5m1w";
-      tag=version;
+      rev = version;
     };
     overrides = x: {
       configurePhase="buildPhase(){ true; }";
     };
   };
 
-  stumpwm = callPackage ./stumpwm {};
-
   alexandria = buildLispPackage rec {
     baseName = "alexandria";
     version = "git-20131029";
-    description = "Alexandria is a collection of portable public domain utilities.";
+    description = "A collection of portable public domain utilities";
     deps = [];
     src = pkgs.fetchgit {
       url = "git://common-lisp.net/projects/alexandria/alexandria.git";
@@ -89,7 +88,7 @@ let lispPackages = rec {
   esrap = buildLispPackage rec {
     baseName = "esrap";
     version = "git-20131029";
-    description = "A Packrat / Parsing Grammar / TDPL parser for Common Lisp.";
+    description = "A Packrat / Parsing Grammar / TDPL parser for Common Lisp";
     deps = [alexandria];
     src = pkgs.fetchgit {
       url = "https://github.com/scymtym/esrap.git";

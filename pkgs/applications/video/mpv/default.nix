@@ -1,6 +1,7 @@
 { stdenv, fetchurl, fetchgit, freetype, pkgconfig, freefont_ttf, ffmpeg, libass
-, lua5, perl, libpthreadstubs
-, python3, docutils, which
+, lua, perl, libpthreadstubs
+, lua5_sockets
+, python3, docutils, which, lib
 , x11Support ? true, libX11 ? null, libXext ? null, mesa ? null, libXxf86vm ? null
 , xineramaSupport ? true, libXinerama ? null
 , xvSupport ? true, libXv ? null
@@ -13,14 +14,15 @@
 , bluraySupport ? true, libbluray ? null
 , speexSupport ? true, speex ? null
 , theoraSupport ? true, libtheora ? null
-, jackaudioSupport ? true, jackaudio ? null
+, jackaudioSupport ? true, jack2 ? null
 , pulseSupport ? true, pulseaudio ? null
 , bs2bSupport ? false, libbs2b ? null
 # For screenshots
 , libpngSupport ? true, libpng ? null
 # for Youtube support
-, quviSupport? false, libquvi ? null
-, cacaSupport? false, libcaca ? null
+, quviSupport ? false, libquvi ? null
+, cacaSupport ? false, libcaca ? null
+, vaapiSupport ? false, libva ? null
 }:
 
 assert x11Support -> (libX11 != null && libXext != null && mesa != null && libXxf86vm != null);
@@ -35,7 +37,7 @@ assert dvdnavSupport -> libdvdnav != null;
 assert bluraySupport -> libbluray != null;
 assert speexSupport -> speex != null;
 assert theoraSupport -> libtheora != null;
-assert jackaudioSupport -> jackaudio != null;
+assert jackaudioSupport -> jack2 != null;
 assert pulseSupport -> pulseaudio != null;
 assert bs2bSupport -> libbs2b != null;
 assert libpngSupport -> libpng != null;
@@ -46,26 +48,25 @@ assert cacaSupport -> libcaca != null;
 # but by purity reasons it should be avoided; thanks the-kenny to point it out!
 # Now, it will just download and package Waf, mimetizing bootstrap.py behaviour
 
-let 
+let
   waf = fetchurl {
-    url = https://waf.googlecode.com/files/waf-1.7.13;
-    sha256 = "03cc750049350ee01cdbc584b70924e333fcc17ba4a2d04648dab1535538a873";
+    url = http://ftp.waf.io/pub/release/waf-1.7.16;
+    sha256 = "b64dc26c882572415fd450b745006107965f3fe17b357e3eb43d6676c9635a61";
   };
-
-  version = "0.3.2";
 
 in
 
 stdenv.mkDerivation rec {
   name = "mpv-${version}";
+  version = "0.6.1";
 
   src = fetchurl {
     url = "https://github.com/mpv-player/mpv/archive/v${version}.tar.gz";
-    sha256 = "1vzdhzry2adyp2yh2dmy1qznqhnzar7g24rhi0vv624jgd20qax2";
+    sha256 = "03vzsvvb1dvm4rn70m97fdbzhlqj9crk7zpvcp00bcl956xjfc9s";
   };
 
   buildInputs = with stdenv.lib;
-    [ waf freetype pkgconfig ffmpeg libass docutils which libpthreadstubs ]
+    [ waf python3 lua perl freetype pkgconfig ffmpeg libass docutils which libpthreadstubs lua5_sockets ]
     ++ optionals x11Support [ libX11 libXext mesa libXxf86vm ]
     ++ optional alsaSupport alsaLib
     ++ optional xvSupport libXv
@@ -74,7 +75,7 @@ stdenv.mkDerivation rec {
     ++ optional dvdreadSupport libdvdread
     ++ optionals dvdnavSupport [ libdvdnav libdvdnav.libdvdread ]
     ++ optional bluraySupport libbluray
-    ++ optional jackaudioSupport jackaudio
+    ++ optional jackaudioSupport jack2
     ++ optional pulseSupport pulseaudio
     ++ optional screenSaverSupport libXScrnSaver
     ++ optional vdpauSupport libvdpau
@@ -84,10 +85,8 @@ stdenv.mkDerivation rec {
     ++ optional quviSupport libquvi
     ++ optional sdl2Support SDL2
     ++ optional cacaSupport libcaca
+    ++ optional vaapiSupport libva
     ;
-
-  nativeBuildInputs = [ python3 lua5 perl ];
-
 
 # There are almost no need of "configure flags", but some libraries
 # weren't detected; see the TODO comments below
@@ -97,7 +96,7 @@ stdenv.mkDerivation rec {
   enableParallelBuilding = true;
 
   configurePhase = ''
-    python3 ${waf} configure --prefix=$out
+    python3 ${waf} configure --prefix=$out ${lib.optionalString vaapiSupport "--enable-vaapi"}
     patchShebangs TOOLS
   '';
 
@@ -109,23 +108,24 @@ stdenv.mkDerivation rec {
     python3 ${waf} install
     # Maybe not needed, but it doesn't hurt anyway: a standard font
     mkdir -p $out/share/mpv
-    ln -s ${freefont_ttf}/share/fonts/truetype/FreeSans.ttf  $out/share/mpv/subfont.ttf 
+    ln -s ${freefont_ttf}/share/fonts/truetype/FreeSans.ttf $out/share/mpv/subfont.ttf
     '';
 
-  meta = {
+  meta = with stdenv.lib;{
     description = "A movie player that supports many video formats (MPlayer and mplayer2 fork)";
     longDescription = ''
-    mpv is a free and open-source general-purpose video player, based on the MPlayer and mplayer2 projects, with great improvements above both.
+      mpv is a free and open-source general-purpose video player,
+      based on the MPlayer and mplayer2 projects, with great
+      improvements above both.
     '';
-    homepage = "http://mpv.io";
-    license = "GPLv2+";
-    platforms = stdenv.lib.platforms.linux;
+    homepage = http://mpv.io;
+    license = licenses.gpl2Plus;
+    maintainers = [ maintainers.AndersonTorres ];
+    platforms = platforms.linux;
   };
 }
 
-# Heavily based on mplayer2 expression
-
 # TODO: Wayland support
-# TODO: investigate libquvi support: it isn't detected by Waf script!
-# TODO: investigate caca support: it isn't detected by Waf script!
-# TODO: a more systematic way to test this package
+# TODO: investigate libquvi problems (related to Youtube support)
+# TODO: investigate caca support
+# TODO: investigate lua5_sockets bug

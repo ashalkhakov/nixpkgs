@@ -12,6 +12,11 @@ stdenv.mkDerivation rec {
 
   patches = [ ./purity.patch ./no-pci-db.patch ];
 
+  preConfigure =
+    ''
+      configureFlagsArray+=(--with-systemdsystemunitdir=$out/lib/systemd/system)
+    '';
+
   postPatch =
     ''
       sed -e 's,/sbin/mdadm,${mdadm}&,g' -e "s,@slashlibdir@,$out/lib,g" -i data/80-udisks.rules
@@ -28,11 +33,7 @@ stdenv.mkDerivation rec {
 
   nativeBuildInputs = [ pkgconfig ];
 
-  configureFlags = [
-    "--localstatedir=/var"
-    "--enable-lvm2"
-    "--with-systemdsystemunitdir=$(out)/etc/systemd/system"
-  ];
+  configureFlags = "--localstatedir=/var --enable-lvm2";
 
   meta = {
     homepage = http://www.freedesktop.org/wiki/Software/udisks;

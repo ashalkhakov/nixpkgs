@@ -1,7 +1,9 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
-with pkgs.lib;
-
+with lib;
+let
+  diskSize = "100G";
+in
 {
   imports = [ ../profiles/headless.nix ../profiles/qemu-guest.nix ];
 
@@ -12,7 +14,7 @@ with pkgs.lib;
             ''
               mkdir $out
               diskImage=$out/$diskImageBase
-              truncate $diskImage --size 10G
+              truncate $diskImage --size ${diskSize}
               mv closure xchg/
             '';
 
@@ -20,8 +22,9 @@ with pkgs.lib;
             ''
               PATH=$PATH:${pkgs.gnutar}/bin:${pkgs.gzip}/bin
               pushd $out
-              tar -Szcf $diskImageBase.tar.gz $diskImageBase
-              rm $out/$diskImageBase
+              mv $diskImageBase disk.raw
+              tar -Szcf $diskImageBase.tar.gz disk.raw
+              rm $out/disk.raw
               popd
             '';
           diskImageBase = "nixos-${config.system.nixosVersion}-${pkgs.stdenv.system}.raw";
@@ -32,7 +35,7 @@ with pkgs.lib;
         ''
           # Create partition table
           ${pkgs.parted}/sbin/parted /dev/vda mklabel msdos
-          ${pkgs.parted}/sbin/parted /dev/vda mkpart primary ext4 1 10G
+          ${pkgs.parted}/sbin/parted /dev/vda mkpart primary ext4 1 ${diskSize}
           ${pkgs.parted}/sbin/parted /dev/vda print
           . /sys/class/block/vda1/uevent
           mknod /dev/vda1 b $MAJOR $MINOR
@@ -111,31 +114,30 @@ with pkgs.lib;
   # Always include cryptsetup so that NixOps can use it.
   environment.systemPackages = [ pkgs.cryptsetup ];
 
-  # Prevent logging in as root without a password.  This doesn't really matter,
-  # since the only PAM services that allow logging in with a null
-  # password are local ones that are inaccessible on Google Compute machines.
-  security.initialRootPassword = mkDefault "!";
-
   # Configure default metadata hostnames
   networking.extraHosts = ''
     169.254.169.254 metadata.google.internal metadata
   '';
 
-  systemd.services.fetch-root-authorized-keys =
-    { description = "Fetch authorized_keys for root user";
+  networking.usePredictableInterfaceNames = false;
 
-      wantedBy = [ "multi-user.target" ];
+  systemd.services.fetch-ssh-keys =
+    { description = "Fetch host keys and authorized_keys for root user";
+
+      wantedBy = [ "sshd.service" ];
       before = [ "sshd.service" ];
-      after = [ "network.target" ];
+      after = [ "network-online.target" ];
+      wants = [ "network-online.target" ];
 
-      path  = [ pkgs.curl ];
+      path  = [ pkgs.wget ];
       script =
         ''
+          wget="wget --retry-connrefused -t 6 --waitretry=10"
           # Don't download the SSH key if it has already been downloaded
           if ! [ -e /root/.ssh/authorized_keys ]; then
                 echo "obtaining SSH key..."
                 mkdir -p /root/.ssh
-                curl -o /root/authorized-keys-metadata http://metadata/0.1/meta-data/authorized-keys
+                $wget -O /root/authorized-keys-metadata http://metadata/0.1/meta-data/authorized-keys
                 if [ $? -eq 0 -a -e /root/authorized-keys-metadata ]; then
                     cat /root/authorized-keys-metadata | cut -d: -f2- > /root/key.pub
                     if ! grep -q -f /root/key.pub /root/.ssh/authorized_keys; then
@@ -146,10 +148,26 @@ with pkgs.lib;
                     rm -f /root/key.pub /root/authorized-keys-metadata
                 fi
           fi
+
+          echo "obtaining SSH private host key..."
+          $wget -O /root/ssh_host_ecdsa_key  http://metadata/0.1/meta-data/attributes/ssh_host_ecdsa_key
+          if [ $? -eq 0 -a -e /root/ssh_host_ecdsa_key ]; then
+              mv -f /root/ssh_host_ecdsa_key /etc/ssh/ssh_host_ecdsa_key
+              echo "downloaded ssh_host_ecdsa_key"
+              chmod 600 /etc/ssh/ssh_host_ecdsa_key
+          fi
+
+          echo "obtaining SSH public host key..."
+          $wget -O /root/ssh_host_ecdsa_key.pub http://metadata/0.1/meta-data/attributes/ssh_host_ecdsa_key_pub
+          if [ $? -eq 0 -a -e /root/ssh_host_ecdsa_key.pub ]; then
+              mv -f /root/ssh_host_ecdsa_key.pub /etc/ssh/ssh_host_ecdsa_key.pub
+              echo "downloaded ssh_host_ecdsa_key.pub"
+              chmod 644 /etc/ssh/ssh_host_ecdsa_key.pub
+          fi
         '';
       serviceConfig.Type = "oneshot";
       serviceConfig.RemainAfterExit = true;
+      serviceConfig.StandardError = "journal+console";
+      serviceConfig.StandardOutput = "journal+console";
      };
-
-
 }

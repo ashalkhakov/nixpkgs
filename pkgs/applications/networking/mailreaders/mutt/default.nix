@@ -1,4 +1,4 @@
-{ stdenv, fetchurl, ncurses, which, perl
+{ stdenv, fetchurl, ncurses, which, perl, automake, autoconf
 , sslSupport ? true
 , imapSupport ? true
 , headerCache ? true
@@ -8,6 +8,7 @@
 , openssl ? null
 , cyrus_sasl ? null
 , gpgme ? null
+, withSidebar ? false
 }:
 
 assert headerCache -> gdbm != null;
@@ -15,14 +16,14 @@ assert sslSupport -> openssl != null;
 assert saslSupport -> cyrus_sasl != null;
 
 let
-  version = "1.5.22";
+  version = "1.5.23";
 in
 stdenv.mkDerivation rec {
-  name = "mutt-${version}";
-  
+  name = "mutt${stdenv.lib.optionalString withSidebar "-with-sidebar"}-${version}";
+
   src = fetchurl {
-    url = "ftp://ftp.mutt.org/mutt/devel/${name}.tar.gz";
-    sha256 = "19zk81spnb0gc8y5mwmcfn33g77wv1xz5bmgic8aan07xn8fislg";
+    url = "mirror://sourceforge/mutt/mutt-${version}.tar.gz";
+    sha256 = "0dzx4qk50pjfsb6cs5jahng96a52k12f7pm0sc78iqdrawg71w1s";
   };
 
   buildInputs = [
@@ -31,8 +32,10 @@ stdenv.mkDerivation rec {
     (if sslSupport then openssl else null)
     (if saslSupport then cyrus_sasl else null)
     (if gpgmeSupport then gpgme else null)
-  ];
-  
+  ]
+  ++ (stdenv.lib.optionals withSidebar [automake autoconf])
+  ;
+
   configureFlags = [
     "--with-mailpath=" "--enable-smtp"
 
@@ -52,12 +55,18 @@ stdenv.mkDerivation rec {
     (if gpgmeSupport then "--enable-gpgme" else "--disable-gpgme")
   ];
 
+  # Adding the sidebar
+  patches = [] ++
+    (stdenv.lib.optional withSidebar (fetchurl {
+      url = http://lunar-linux.org/~tchan/mutt/patch-1.5.23.sidebar.20140412.txt;
+      sha256 = "0bq556sycl0qkr5vg5c3l16bh2bifqc2j7d64n4hw19q0ba2b45w";
+    }));
+
   meta = with stdenv.lib; {
     description = "A small but very powerful text-based mail client";
     homepage = http://www.mutt.org;
-    license = "GPLv2+";
+    license = stdenv.lib.licenses.gpl2Plus;
     platforms = platforms.unix;
     maintainers = with maintainers; [ the-kenny ];
   };
 }
-

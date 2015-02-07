@@ -5,14 +5,12 @@
 }:
 
 stdenv.mkDerivation rec {
-  name = "nix-1.6.1";
+  name = "nix-1.7";
 
   src = fetchurl {
     url = "http://nixos.org/releases/nix/${name}/${name}.tar.xz";
-    sha256 = "31d15f99b2405924a4be278334cc973a71999303631e6798c1d294db9be4bf84";
+    sha256 = "349163654f2ae3e1a17fb3da7ed164a4cac153728bbe9a26764e17556d3dcc92";
   };
-
-  patches = [ ./hash-check.patch ];
 
   nativeBuildInputs = [ perl pkgconfig ];
 
@@ -68,9 +66,16 @@ stdenv.mkDerivation rec {
   enableParallelBuilding = true;
 
   meta = {
-    description = "The Nix Deployment System";
+    description = "Powerful package manager that makes package management reliable and reproducible";
+    longDescription = ''
+      Nix is a powerful package manager for Linux and other Unix systems that
+      makes package management reliable and reproducible. It provides atomic
+      upgrades and rollbacks, side-by-side installation of multiple versions of
+      a package, multi-user package management and easy setup of build
+      environments.
+    '';
     homepage = http://nixos.org/;
-    license = "LGPLv2+";
+    license = stdenv.lib.licenses.lgpl2Plus;
     maintainers = [ stdenv.lib.maintainers.eelco ];
     platforms = stdenv.lib.platforms.all;
   };

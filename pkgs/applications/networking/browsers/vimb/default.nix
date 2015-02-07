@@ -4,26 +4,26 @@
 
 stdenv.mkDerivation rec {
   name = "vimb-${version}";
-  version = "2.2";
+  version = "2.8";
 
   src = fetchurl {
     url = "https://github.com/fanglingsu/vimb/archive/${version}.tar.gz";
-    sha256 = "18gig6rcxv0i4a8mz3jv29zpj0323zw45jsg1ycx61a08rzag60m";
+    sha256 = "04ify6gqpkislsppaplvdfgs3fja9gl37j3dywg7bhz1fbkv166k";
   };
 
   # Nixos default ca bundle
   patchPhase = ''
-    sed -i s,/etc/ssl/certs/ca-certificates.crt,/etc/ssl/certs/ca-bundle.crt, src/default.h
+    sed -i s,/etc/ssl/certs/ca-certificates.crt,/etc/ssl/certs/ca-bundle.crt, src/setting.c
   '';
 
-  buildInputs = [ makeWrapper gtk libsoup pkgconfig webkit ];
+  buildInputs = [ makeWrapper gtk libsoup pkgconfig webkit gsettings_desktop_schemas ];
 
   makeFlags = [ "PREFIX=$(out)" ];
 
-  postInstall = ''
+  preFixup = ''
     wrapProgram "$out/bin/vimb" \
       --prefix GIO_EXTRA_MODULES : "${glib_networking}/lib/gio/modules" \
-      --prefix XDG_DATA_DIRS : "${gsettings_desktop_schemas}/share"
+      --prefix XDG_DATA_DIRS : "$GSETTINGS_SCHEMAS_PATH"
   '';
 
   meta = {

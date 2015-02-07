@@ -100,9 +100,14 @@ let
         ln -sv ${configfile} $buildRoot/.config
         make $makeFlags "''${makeFlagsArray[@]}" oldconfig
         runHook postConfigure
+
+        buildFlagsArray+=("KBUILD_BUILD_TIMESTAMP=Thu Jan 1 00:00:01 UTC 1970")
       '';
 
-      buildFlags = [ "KBUILD_BUILD_VERSION=1-NixOS" platform.kernelTarget ] ++ optional isModular "modules";
+      buildFlags = [
+        "KBUILD_BUILD_VERSION=1-NixOS"
+        platform.kernelTarget
+      ] ++ optional isModular "modules";
 
       installFlags = [
         "INSTALLKERNEL=${installkernel}"
@@ -193,11 +198,12 @@ let
             " (with patches: "
             + stdenv.lib.concatStrings (stdenv.lib.intersperse ", " (map (x: x.name) kernelPatches))
             + ")");
-        license = "GPLv2";
+        license = stdenv.lib.licenses.gpl2;
         homepage = http://www.kernel.org/;
         repositories.git = https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git;
         maintainers = [
           maintainers.shlevy
+          maintainers.thoughtpolice
         ];
         platforms = platforms.linux;
       };

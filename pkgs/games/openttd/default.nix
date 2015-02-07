@@ -2,11 +2,11 @@
 
 stdenv.mkDerivation rec {
   name = "openttd-${version}";
-  version = "1.3.3";
+  version = "1.4.4";
 
   src = fetchurl {
     url = "http://binaries.openttd.org/releases/${version}/${name}-source.tar.xz";
-    sha256 = "0pfagqw8i1c6zrzarlwivrcac8b8ai1inam9qc01hj3h04nfv4b9";
+    sha256 = "1xykqb5bx2dzffxhvm4cbn1nf72f7zcdz8hy25i5wky4hfw31x3h";
   };
 
   buildInputs = [ SDL libpng pkgconfig xz zlib freetype fontconfig ];
@@ -24,7 +24,7 @@ stdenv.mkDerivation rec {
   '';
 
   meta = {
-    description = ''OpenTTD is an open source clone of the Microprose game "Transport Tycoon Deluxe"'';
+    description = ''Open source clone of the Microprose game "Transport Tycoon Deluxe"'';
     longDescription = ''
       OpenTTD is a transportation economics simulator. In single player mode,
       players control a transportation business, and use rail, road, sea, and air
@@ -36,7 +36,7 @@ stdenv.mkDerivation rec {
         - observe as spectators
     '';
     homepage = http://www.openttd.org/;
-    license = "GPLv2";
+    license = stdenv.lib.licenses.gpl2;
     platforms = stdenv.lib.platforms.unix;
     maintainers = with stdenv.lib.maintainers; [ jcumming the-kenny ];
   };

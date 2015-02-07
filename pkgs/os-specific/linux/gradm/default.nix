@@ -3,11 +3,11 @@
 
 stdenv.mkDerivation rec {
   name    = "gradm-${version}";
-  version = "3.0-201401291757";
+  version = "3.0-201408301734";
 
   src  = fetchurl {
     url    = "http://grsecurity.net/stable/${name}.tar.gz";
-    sha256 = "19p7kaqbvf41scc63n69b5v5xzpw3mbf5zy691rply8hdm7736cw";
+    sha256 = "171i1jyw82dnv2fi4dnh40dw1wa5hrllnpjf181cafnzxjpyb45i";
   };
 
   buildInputs = [ gcc coreutils findutils binutils pam flex bison bash ];
@@ -15,7 +15,6 @@ stdenv.mkDerivation rec {
     substituteInPlace ./Makefile --replace "/usr/include/security/pam_" "${pam}/include/security/pam_"
     substituteInPlace ./gradm_defs.h --replace "/sbin/grlearn"   "$out/sbin/grlearn"
     substituteInPlace ./gradm_defs.h --replace "/sbin/gradm"     "$out/sbin/gradm"
-    substituteInPlace ./gradm_defs.h --replace "/sbin/gradm_pam" "$out/sbin/gradm_pam"
   '';
 
   postInstall = ''
@@ -25,6 +24,8 @@ stdenv.mkDerivation rec {
     KERNEL=="grsec",          MODE="0622"
     LABEL="permissions_end"
     EOF
+
+    echo "inherit-learn /nix/store" >> $out/etc/grsec/learn_config
   '';
 
   makeFlags =

@@ -1,15 +1,14 @@
-{ stdenv, fetchgit, makeWrapper, which, coreutils, rrdtool, perl, perlPackages
+{ stdenv, fetchurl, makeWrapper, which, coreutils, rrdtool, perl, perlPackages
 , python, ruby, openjdk, nettools
 }:
 
 stdenv.mkDerivation rec {
-  version = "2.0.19";
+  version = "2.0.21";
   name = "munin-${version}";
 
-  src = fetchgit {
-    url = "git://github.com/munin-monitoring/munin.git";
-    rev = "refs/tags/${version}";
-    sha256 = "0027rrdrmcql68b475jlxnfgkijbfngynkjpdii6fgaszswqz3ay";
+  src = fetchurl {
+    url = "https://github.com/munin-monitoring/munin/archive/${version}.tar.gz";
+    sha256 = "18ipk8n78iik07190h9r8mj5209ha6yhbiw7da0l4khw0y00cvf8";
   };
 
   buildInputs = [ 
@@ -21,6 +20,7 @@ stdenv.mkDerivation rec {
     perl
     perlPackages.ModuleBuild
     perlPackages.HTMLTemplate
+    perlPackages.NetCIDR
     perlPackages.NetSSLeay
     perlPackages.NetServer
     perlPackages.Log4Perl
@@ -100,18 +100,17 @@ stdenv.mkDerivation rec {
         ln -s $out/nix-support/propagated-native-build-inputs $out/nix-support/propagated-user-env-packages
     fi
 
-    # TODO: toPerlLibPath can be added to
-    # pkgs/development/interpreters/perl5.16/setup-hook.sh (and the other perl
-    # versions) just like for python. NOTE: it causes massive rebuilds.
-    # $(toPerlLibPath $out perlPackages.Log4Perl ...)
-
     for file in "$out"/bin/munindoc "$out"/sbin/munin-* "$out"/lib/munin-* "$out"/www/cgi/*; do
         # don't wrap .jar files
         case "$file" in
             *.jar) continue;;
         esac
         wrapProgram "$file" \
-          --set PERL5LIB "$out/lib/perl5/site_perl:${perlPackages.Log4Perl}/lib/perl5/site_perl:${perlPackages.IOSocketInet6}/lib/perl5/site_perl:${perlPackages.Socket6}/lib/perl5/site_perl:${perlPackages.URI}/lib/perl5/site_perl:${perlPackages.DBFile}/lib/perl5/site_perl:${perlPackages.DateManip}/lib/perl5/site_perl:${perlPackages.HTMLTemplate}/lib/perl5/site_perl:${perlPackages.FileCopyRecursive}/lib/perl5/site_perl:${perlPackages.FCGI}/lib/perl5/site_perl:${perlPackages.NetSNMP}/lib/perl5/site_perl:${perlPackages.NetServer}/lib/perl5/site_perl:${perlPackages.ListMoreUtils}/lib/perl5/site_perl:${perlPackages.TimeHiRes}/lib/perl5/site_perl:${rrdtool}/lib/perl:${perlPackages.DBDPg}/lib/perl5/site_perl:${perlPackages.LWPUserAgent}/lib/perl5/site_perl"
+          --set PERL5LIB "$out/lib/perl5/site_perl:${rrdtool}/lib/perl:${with perlPackages; stdenv.lib.makePerlPath [
+                Log4Perl IOSocketInet6 Socket6 URI DBFile DateManip
+                HTMLTemplate FileCopyRecursive FCGI NetCIDR NetSNMP NetServer
+                ListMoreUtils TimeHiRes DBDPg LWPUserAgent
+                ]}"
     done
   '';
 

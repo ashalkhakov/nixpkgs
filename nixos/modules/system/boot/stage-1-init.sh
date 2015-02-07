@@ -4,7 +4,8 @@ targetRoot=/mnt-root
 console=tty1
 
 export LD_LIBRARY_PATH=@extraUtils@/lib
-export PATH=@extraUtils@/bin:@extraUtils@/sbin
+export PATH=@extraUtils@/bin
+ln -s @extraUtils@/bin /bin
 
 
 fail() {
@@ -58,13 +59,14 @@ echo
 mkdir -p /etc
 touch /etc/fstab # to shut up mount
 touch /etc/mtab # to shut up mke2fs
+touch /etc/initrd-release
 mkdir -p /proc
-mount -t proc none /proc
+mount -t proc proc /proc
 mkdir -p /sys
-mount -t sysfs none /sys
-mount -t devtmpfs -o "size=@devSize@" none /dev
+mount -t sysfs sysfs /sys
+mount -t devtmpfs -o "size=@devSize@" devtmpfs /dev
 mkdir -p /run
-mount -t tmpfs -o "mode=0755,size=@runSize@" none /run
+mount -t tmpfs -o "mode=0755,size=@runSize@" tmpfs /run
 
 
 # Process the kernel command line.
@@ -139,8 +141,6 @@ mkdir -p /dev/.mdadm
 systemd-udevd --daemon
 udevadm trigger --action=add
 udevadm settle || true
-modprobe scsi_wait_scan || true
-udevadm settle || true
 
 
 # Load boot-time keymap before any LVM/LUKS initialization
@@ -168,9 +168,24 @@ if test -e /sys/power/tuxonice/resume; then
     fi
 fi
 
-if test -n "@resumeDevice@" -a -e /sys/power/resume -a -e /sys/power/disk; then
-    echo "@resumeDevice@" > /sys/power/resume 2> /dev/null || echo "failed to resume..."
-    echo shutdown > /sys/power/disk
+if test -e /sys/power/resume -a -e /sys/power/disk; then
+    if test -n "@resumeDevice@"; then
+        resumeDev="@resumeDevice@"
+    else
+        for sd in @resumeDevices@; do
+            # Try to detect resume device. According to Ubuntu bug:
+            # https://bugs.launchpad.net/ubuntu/+source/pm-utils/+bug/923326/comments/1
+            # When there are multiple swap devices, we can't know where will hibernate
+            # image reside. We can check all of them for swsuspend blkid.
+            if [ "$(udevadm info -q property "$sd" | sed -n 's/^ID_FS_TYPE=//p')" = "swsuspend" ]; then
+                resumeDev="$sd"
+                break
+            fi
+        done
+    fi
+    if test -n "$resumeDev"; then
+        echo "$resumeDev" > /sys/power/resume 2> /dev/null || echo "failed to resume..."
+    fi
 fi
 
 
@@ -194,6 +209,9 @@ checkFS() {
     # Don't check ROM filesystems.
     if [ "$fsType" = iso9660 -o "$fsType" = udf ]; then return 0; fi
 
+    # Don't check resilient COWs as they validate the fs structures at mount time
+    if [ "$fsType" = btrfs -o "$fsType" = zfs ]; then return 0; fi
+
     # If we couldn't figure out the FS type, then skip fsck.
     if [ "$fsType" = auto ]; then
         echo 'cannot check filesystem with type "auto"!'
@@ -206,7 +224,7 @@ checkFS() {
     # does (minutes versus seconds).
     if test -z "@checkJournalingFS@" -a \
         \( "$fsType" = ext3 -o "$fsType" = ext4 -o "$fsType" = reiserfs \
-        -o "$fsType" = xfs -o "$fsType" = jfs \)
+        -o "$fsType" = xfs -o "$fsType" = jfs -o "$fsType" = f2fs \)
     then
         return 0
     fi
@@ -262,6 +280,13 @@ mountFS() {
     echo "$device /mnt-root$mountPoint $fsType $options" >> /etc/fstab
 
     checkFS "$device" "$fsType"
+
+    # Create backing directories for unionfs-fuse.
+    if [ "$fsType" = unionfs-fuse ]; then
+        for i in $(IFS=:; echo ${options##*,dirs=}); do
+            mkdir -m 0700 -p /mnt-root"${i%=*}"
+        done
+    fi
 
     echo "mounting $device on $mountPoint..."
 
@@ -343,12 +368,20 @@ exec 3>&-
 @postMountCommands@
 
 
+# Emit a udev rule for /dev/root to prevent systemd from complaining.
+eval $(udevadm info --export --export-prefix=ROOT_ --device-id-of-file=$targetRoot || true)
+if [ "$ROOT_MAJOR" -a "$ROOT_MINOR" -a "$ROOT_MAJOR" != 0 ]; then
+    mkdir -p /run/udev/rules.d
+    echo 'ACTION=="add|change", SUBSYSTEM=="block", ENV{MAJOR}=="'$ROOT_MAJOR'", ENV{MINOR}=="'$ROOT_MINOR'", SYMLINK+="root"' > /run/udev/rules.d/61-dev-root-link.rules
+fi
+
+
 # Stop udevd.
 udevadm control --exit || true
 
 # Kill any remaining processes, just to be sure we're not taking any
-# with us into stage 2. unionfs-fuse mounts require the unionfs process.
-pkill -9 -v '(1|unionfs)'
+# with us into stage 2. But keep storage daemons like unionfs-fuse.
+pkill -9 -v -f '@'
 
 
 if test -n "$debug1mounts"; then fail; fi

@@ -1,36 +1,36 @@
 { stdenv, fetchurl, makeWrapper
-, coreutils, findutils, jdk, rlwrap, clojure, gnupg }:
+, coreutils, findutils, jdk, rlwrap, gnupg }:
 
 stdenv.mkDerivation rec {
   pname = "leiningen";
-  version = "2.3.4";
+  version = "2.5.0";
   name = "${pname}-${version}";
 
   src = fetchurl {
     url = "https://raw.github.com/technomancy/leiningen/${version}/bin/lein-pkg";
-    sha256 = "1v83hpvp349pgqqiy4babc5m5b9lcwk0fif80fpv4jqvp0a8v6r7";
+    sha256 = "1drl35313xp2gg5y52wp8414i2fm806rhgcsghl4igrm3afrv85x";
   };
 
   jarsrc = fetchurl {
-    url = "https://leiningen.s3.amazonaws.com/downloads/${pname}-${version}-standalone.jar";
-    sha256 = "1pqc99p4vz4q3qcs90cqql6m7kc27ihx4hbqs5alxkzk7jv8s2bk";
+    url = "https://github.com/technomancy/leiningen/releases/download/${version}/${name}-standalone.jar";
+    sha256 = "0fd7yqrj9asx1n3nszli7hr4fj47v2pdr9msk5g75955pw7yavp9";
   };
 
-  patches = ./lein_2.3.0.patch;
+  patches = [ ./lein-fix-jar-path.patch ];
 
-  inherit rlwrap clojure gnupg findutils coreutils jdk;
+  inherit rlwrap gnupg findutils coreutils jdk;
 
   builder = ./builder.sh;
 
   buildInputs = [ makeWrapper ];
 
-  propagatedBuildInputs = [ jdk clojure ];
+  propagatedBuildInputs = [ jdk ];
 
   meta = {
     homepage = http://leiningen.org/;
     description = "Project automation for Clojure";
-    license = "EPL";
+    license = stdenv.lib.licenses.epl10;
     platforms = stdenv.lib.platforms.linux;
-    maintainer = with stdenv.lib.maintainers; [ the-kenny ];
+    maintainers = with stdenv.lib.maintainers; [ the-kenny ];
   };
 }

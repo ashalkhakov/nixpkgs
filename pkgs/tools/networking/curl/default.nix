@@ -13,11 +13,11 @@ assert scpSupport -> libssh2 != null;
 assert c-aresSupport -> c-ares != null;
 
 stdenv.mkDerivation rec {
-  name = "curl-7.35.0";
+  name = "curl-7.38.0";
 
   src = fetchurl {
     url = "http://curl.haxx.se/download/${name}.tar.bz2";
-    sha256 = "10qdzk3lfdpg8lvg8wfiqbfjp5yxyv25y1y2679vgwal2iqd2x6p";
+    sha256 = "1flybwbdahx0sm9ipgp9k60wlrpkrmfflk1zf5j4w6mak4gd8nq3";
   };
 
   # Zlib and OpenSSL must be propagated because `libcurl.la' contains
@@ -30,8 +30,10 @@ stdenv.mkDerivation rec {
     optional sslSupport openssl ++
     optional scpSupport libssh2;
 
+  # for the second line see http://curl.haxx.se/mail/tracker-2014-03/0087.html
   preConfigure = ''
     sed -e 's|/usr/bin|/no-such-path|g' -i.bak configure
+    rm src/tool_hugehelp.c
   '';
 
   configureFlags = [

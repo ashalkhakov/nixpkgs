@@ -5,11 +5,11 @@ let
 in
 
 stdenv.mkDerivation {
-  name = "ocaml-findlib-1.4";
+  name = "ocaml-findlib-1.5.3";
 
   src = fetchurl {
-    url = http://download.camlcity.org/download/findlib-1.4.tar.gz;
-    sha256 = "1y5xy6crldyh8pl9ca2cj31igbjfkicr9zqkq9p1fccxszjnah3f";
+    url = http://download.camlcity.org/download/findlib-1.5.3.tar.gz;
+    sha256 = "1kw2siv4pc8q060m9xpgxvjs07ic1kiphyxmkwcz6nyb91p8286r";
   };
 
   buildInputs = [m4 ncurses ocaml];
@@ -49,10 +49,11 @@ stdenv.mkDerivation {
   meta = {
     homepage = http://projects.camlcity.org/projects/findlib.html;
     description = "O'Caml library manager";
-    license = "MIT/X11";
+    license = stdenv.lib.licenses.mit;
     platforms = ocaml.meta.platforms;
     maintainers = [
       stdenv.lib.maintainers.z77z
+      stdenv.lib.maintainers.vbmithr
     ];
   };
 }

@@ -1,5 +1,5 @@
-{ config, pkgs, ... }:
-with pkgs.lib;
+{ config, lib, pkgs, ... }:
+with lib;
 let
   cfg = config.services.jenkins;
 in {
@@ -15,7 +15,7 @@ in {
 
       user = mkOption {
         default = "jenkins";
-        type = with types; string;
+        type = types.str;
         description = ''
           User the jenkins server should execute under.
         '';
@@ -23,15 +23,25 @@ in {
 
       group = mkOption {
         default = "jenkins";
-        type = with types; string;
+        type = types.str;
         description = ''
-          User the jenkins server should execute under.
+          If the default user "jenkins" is configured then this is the primary
+          group of that user.
+        '';
+      };
+
+      extraGroups = mkOption {
+        type = types.listOf types.str;
+        default = [ ];
+        example = [ "wheel" "dialout" ];
+        description = ''
+          List of extra groups that the "jenkins" user should be a part of.
         '';
       };
 
       home = mkOption {
         default = "/var/lib/jenkins";
-        type = with types; string;
+        type = types.path;
         description = ''
           The path to use as JENKINS_HOME. If the default user "jenkins" is configured then
           this is the home of the "jenkins" user.
@@ -42,7 +52,7 @@ in {
         default = 8080;
         type = types.uniq types.int;
         description = ''
-          Specifies port number on which the jenkins HTTP interface listens. The default is 8080
+          Specifies port number on which the jenkins HTTP interface listens. The default is 8080.
         '';
       };
 
@@ -56,10 +66,19 @@ in {
 
       environment = mkOption {
         default = { NIX_REMOTE = "daemon"; };
-        type = with types; attrsOf string;
+        type = with types; attrsOf str;
         description = ''
           Additional environment variables to be passed to the jenkins process.
           The environment will always include JENKINS_HOME.
+        '';
+      };
+
+      extraOptions = mkOption {
+        type = types.listOf types.str;
+        default = [ ];
+        example = [ "--debug=9" "--httpListenAddress=localhost" ];
+        description = ''
+          Additional command line arguments to pass to Jenkins.
         '';
       };
     };
@@ -77,6 +96,7 @@ in {
       createHome = true;
       home = cfg.home;
       group = cfg.group;
+      extraGroups = cfg.extraGroups;
       useDefaultShell = true;
       uid = config.ids.uids.jenkins;
     };
@@ -93,7 +113,7 @@ in {
       path = cfg.packages;
 
       script = ''
-        ${pkgs.jdk}/bin/java -jar ${pkgs.jenkins} --httpPort=${toString cfg.port}
+        ${pkgs.jdk}/bin/java -jar ${pkgs.jenkins} --httpPort=${toString cfg.port} ${concatStringsSep " " cfg.extraOptions}
       '';
 
       postStart = ''

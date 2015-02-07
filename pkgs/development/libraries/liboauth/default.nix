@@ -2,11 +2,11 @@
 
 
 stdenv.mkDerivation rec {
-  name = "liboauth-1.0.1";
+  name = "liboauth-1.0.3";
 
   src = fetchurl {
     url = "mirror://sourceforge/liboauth/${name}.tar.gz";
-    sha256 = "12wdwq09nba8dzzcgcpbzmgcjr141ky69pm78s15hyyvw4px71sh";
+    sha256 = "07w1aq8y8wld43wmbk2q8134p3bfkp2vma78mmsfgw2jn1bh3xhd";
   };
 
   buildInputs = [ nss openssl ];
@@ -15,6 +15,7 @@ stdenv.mkDerivation rec {
     platforms = platforms.linux;
     description = "C library implementing the OAuth secure authentication protocol";
     homepage = http://liboauth.sourceforge.net/;
+    repositories.git = https://github.com/x42/liboauth.git;
   };
 
 }

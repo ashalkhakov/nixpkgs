@@ -19,11 +19,14 @@ stdenv.mkDerivation rec {
     libnotify isocodes gobjectIntrospection
   ];
 
-  preBuild = "patchShebangs ./scripts";
+  preBuild = ''
+    patchShebangs ./scripts
+    substituteInPlace data/dconf/Makefile --replace "dconf update" "echo"
+  '';
 
-  postInstall = ''
+  preFixup = ''
     for f in "$out"/bin/*; do
-      wrapProgram "$f" --prefix XDG_DATA_DIRS : "$out/share" \
+      wrapProgram "$f" --prefix XDG_DATA_DIRS : "$out/share:$GSETTINGS_SCHEMAS_PATH" \
                        --prefix PYTHONPATH : "$(toPythonPath ${pygobject3})" \
                        --prefix LD_LIBRARY_PATH : "${gnome3.gtk3}/lib:${atk}/lib:$out/lib" \
                        --prefix GI_TYPELIB_PATH : "$GI_TYPELIB_PATH:$out/lib/girepository-1.0" \

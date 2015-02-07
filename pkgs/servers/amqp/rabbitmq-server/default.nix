@@ -4,11 +4,11 @@
 stdenv.mkDerivation rec {
   name = "rabbitmq-server-${version}";
 
-  version = "3.2.1";
+  version = "3.3.5";
 
   src = fetchurl {
     url = "http://www.rabbitmq.com/releases/rabbitmq-server/v${version}/${name}.tar.gz";
-    sha256 = "0j9yx64sdgkv0h20zjs65aa2ag6wwv50i6hd3x69m0cc6shzcc0f";
+    sha256 = "1hkhkpv2f0nzvw09zfrqg89mphdpn4nwvzrlqnhqf82bd2pzhsvs";
   };
 
   buildInputs =
@@ -38,6 +38,6 @@ stdenv.mkDerivation rec {
   meta = {
     homepage = http://www.rabbitmq.com/;
     description = "An implementation of the AMQP messaging protocol";
-    platforms = stdenv.lib.platforms.linux;
+    platforms = stdenv.lib.platforms.unix;
   };
 }

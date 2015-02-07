@@ -1,14 +1,14 @@
 { stdenv, fetchurl, pkgconfig, udev }:
 
 stdenv.mkDerivation rec {
-  name = "dhcpcd-6.2.1";
+  name = "dhcpcd-6.5.1";
 
   src = fetchurl {
-    url = "http://roy.marples.name/downloads/dhcpcd/${name}.tar.bz2";
-    sha256 = "1gs23zwhzml2aam4j6rdncaqfv3z5n1ifx6lq4b8ccifqa87gbga";
+    url = "mirror://roy/dhcpcd/${name}.tar.bz2";
+    sha256 = "0y0falxxlahr2i630ydraq4ldr7d5mg8ar0s5np5ddl76w58dlrp";
   };
 
-  patches = [ ./lxc_ro_promote_secondaries.patch ];
+  patches = [ /* ./lxc_ro_promote_secondaries.patch */ ];
 
   buildInputs = [ pkgconfig udev ];
 
@@ -21,7 +21,7 @@ stdenv.mkDerivation rec {
   installFlags = "DBDIR=\${TMPDIR}/db SYSCONFDIR=$(out)/etc";
 
   # Check that the udev plugin got built.
-  postInstall = "[ -e $out/lib/dhcpcd/dev/udev.so ]";
+  postInstall = stdenv.lib.optional (udev != null) "[ -e $out/lib/dhcpcd/dev/udev.so ]";
 
   meta = {
     description = "A client for the Dynamic Host Configuration Protocol (DHCP)";

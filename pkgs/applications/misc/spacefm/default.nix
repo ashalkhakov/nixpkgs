@@ -15,13 +15,13 @@ in stdenv.mkDerivation rec {
 
   buildInputs = [ gtk3 udev desktop_file_utils shared_mime_info intltool pkgconfig makeWrapper ];
 
-  postInstall = ''
+  preFixup = ''
     wrapProgram "$out/bin/spacefm" \
-      --prefix XDG_DATA_DIRS : "${gtk3}/share"
+      --prefix XDG_DATA_DIRS : "$GSETTINGS_SCHEMAS_PATH"
   '';
 
   meta = {
-    description = "Multi-panel tabbed file and desktop manager for Linux with built-in VFS, udev- or HAL-based device manager, customizable menu system, and bash integration.";
+    description = "Multi-panel tabbed file and desktop manager for Linux with built-in VFS, udev- or HAL-based device manager, customizable menu system, and bash integration";
     platforms = pkgs.lib.platforms.linux;
     license = pkgs.lib.licenses.gpl3;
   };
