@@ -8,8 +8,6 @@ stdenv.mkDerivation rec {
     url = "mirror://sourceforge/ats2-lang/ATS2-Postiats-${version}.tgz";
     sha256 = "0zcki97zj9r1dvlfriwfckp9b9z7iavw09q21v6i5ld90hw9588q";
   };
-  # this is necessary because atxt files usually include some .hats files
-  patches = [ ./install-atsdoc-hats-files.patch ];
 
   buildInputs = [ gmp ];
 
