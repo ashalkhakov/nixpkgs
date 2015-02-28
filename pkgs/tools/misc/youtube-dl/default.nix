@@ -1,18 +1,18 @@
-{ stdenv, fetchurl, python, zip }:
+{ stdenv, fetchurl, python, zip, pandoc }:
 
 let
-  version = "2014.11.04";
+  version = "2015.01.30.2";
 in
 stdenv.mkDerivation rec {
   name = "youtube-dl-${version}";
 
   src = fetchurl {
     url = "http://youtube-dl.org/downloads/${version}/${name}.tar.gz";
-    sha256 = "073qnbl0lbv1pacqsdvccawlzgxs3kbayw3inlyqhr6xn3471jgk";
+    sha256 = "00ymx254qgic9ka7wb41cinv1w0ijq6l0f5k2cfspi958jqql9lm";
   };
 
   buildInputs = [ python ];
-  nativeBuildInputs = [ zip ];
+  nativeBuildInputs = [ zip pandoc ];
 
   patchPhase = ''
     rm youtube-dl
@@ -29,6 +29,6 @@ stdenv.mkDerivation rec {
     license = stdenv.lib.licenses.unlicense;
 
     platforms = with stdenv.lib.platforms; linux ++ darwin;
-    maintainers = with stdenv.lib.maintainers; [ bluescreen303 simons phreedom AndersonTorres ];
+    maintainers = with stdenv.lib.maintainers; [ bluescreen303 simons phreedom AndersonTorres fuuzetsu ];
   };
 }

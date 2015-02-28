@@ -5,8 +5,8 @@ with lib;
 let
 
   cfg = config.services.xserver.displayManager;
-  gdm = pkgs.gnome3_12.gdm; # gdm 3.10 not supported
   gnome3 = config.environment.gnome3.packageSet;
+  gdm = gnome3.gdm;
 
 in
 
@@ -55,6 +55,8 @@ in
           GDM_X_SERVER = "${cfg.xserverBin} ${cfg.xserverArgs}";
           GDM_SESSIONS_DIR = "${cfg.session.desktops}";
           XDG_CONFIG_DIRS = "${gnome3.gnome_settings_daemon}/etc/xdg";
+          # Find the mouse
+          XCURSOR_PATH = "~/.icons:${config.system.path}/share/icons";
         };
         execCmd = "exec ${gdm}/sbin/gdm";
       };

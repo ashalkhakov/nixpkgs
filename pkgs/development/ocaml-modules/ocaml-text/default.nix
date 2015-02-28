@@ -8,7 +8,7 @@ stdenv.mkDerivation {
     sha256 = "0j8gaak0ajnlmn8knvfygqwwzs7awjv5rfn5cbj6qxqbxhjd5m6g";
   };
 
-  buildInputs = [ocaml findlib libiconv ncurses];
+  buildInputs = [ocaml findlib ncurses libiconv];
 
   configurePhase = "iconv_prefix=${libiconv} ocaml setup.ml -configure";
 
@@ -18,9 +18,7 @@ stdenv.mkDerivation {
   meta = {
     homepage = "http://ocaml-text.forge.ocamlcore.org/";
     description = "OCaml-Text is a library for dealing with ``text'', i.e. sequence of unicode characters, in a convenient way. ";
-    license = "BSD";
+    license = stdenv.lib.licenses.bsd3;
     platforms = ocaml.meta.platforms;
-    maintainers = [
-    ];
   };
 }

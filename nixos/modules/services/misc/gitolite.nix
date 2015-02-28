@@ -36,6 +36,7 @@ in
           Initial administrative public key for Gitolite. This should
           be an SSH Public Key. Note that this key will only be used
           once, upon the first initialization of the Gitolite user.
+          The key string cannot have any line breaks in it.
         '';
       };
 
@@ -46,11 +47,19 @@ in
           A list of custom git hooks that get copied to <literal>~/.gitolite/hooks/common</literal>.
         '';
       };
+
+      user = mkOption {
+        type = types.str;
+        default = "gitolite";
+        description = ''
+          Gitolite user account. This is the username of the gitolite endpoint.
+        '';
+      };
     };
   };
 
   config = mkIf cfg.enable {
-    users.extraUsers.gitolite = {
+    users.extraUsers.${cfg.user} = {
       description     = "Gitolite user";
       home            = cfg.dataDir;
       createHome      = true;
@@ -62,7 +71,7 @@ in
       description = "Gitolite initialization";
       wantedBy    = [ "multi-user.target" ];
 
-      serviceConfig.User = "gitolite";
+      serviceConfig.User = "${cfg.user}";
       serviceConfig.Type = "oneshot";
       serviceConfig.RemainAfterExit = true;
 

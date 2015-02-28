@@ -24,11 +24,20 @@ let
                 pkgs.sudo
                 pkgs.docbook5
                 pkgs.docbook5_xsl
-                pkgs.grub
-                pkgs.perlPackages.XMLLibXML
                 pkgs.unionfs-fuse
+
+                # Bootloader support
+                pkgs.grub
+                pkgs.grub2
+                pkgs.grub2_efi
                 pkgs.gummiboot
+                pkgs.perlPackages.XMLLibXML
+                pkgs.perlPackages.ListCompare
               ];
+
+            # Don't use https://cache.nixos.org since the fake
+            # cache.nixos.org doesn't do https.
+            nix.binaryCaches = [ http://cache.nixos.org/ ];
           }
         ];
     }).config.system.build.isoImage;
@@ -38,7 +47,7 @@ let
   makeConfig = { testChannel, grubVersion, grubDevice, grubIdentifier
     , readOnly ? true, forceGrubReinstallCount ? 0 }:
     pkgs.writeText "configuration.nix" ''
-      { config, pkgs, modulesPath, ... }:
+      { config, lib, pkgs, modulesPath, ... }:
 
       { imports =
           [ ./hardware-configuration.nix
@@ -59,6 +68,8 @@ let
         ${optionalString (!readOnly) "nix.readOnlyStore = false;"}
 
         environment.systemPackages = [ ${optionalString testChannel "pkgs.rlwrap"} ];
+
+        nix.binaryCaches = [ http://cache.nixos.org/ ];
       }
     '';
 
@@ -66,7 +77,7 @@ let
   # Configuration of a web server that simulates the Nixpkgs channel
   # distribution server.
   webserver =
-    { config, pkgs, ... }:
+    { config, lib, pkgs, ... }:
 
     { services.httpd.enable = true;
       services.httpd.adminAddr = "foo@example.org";
@@ -184,9 +195,13 @@ let
 
       $machine->succeed("test -e /boot/grub");
 
+      # Check whether /root has correct permissions.
+      $machine->succeed("stat -c '%a' /root") =~ /700/ or die;
+
       # Did the swap device get activated?
-      $machine->waitForUnit("swap.target");
-      $machine->succeed("cat /proc/swaps | grep -q /dev");
+      # uncomment once https://bugs.freedesktop.org/show_bug.cgi?id=86930 is resolved
+      #$machine->waitForUnit("swap.target");
+      $machine->waitUntilSucceeds("cat /proc/swaps | grep -q /dev");
 
       # Check whether the channel works.
       $machine->succeed("nix-env -i coreutils >&2");

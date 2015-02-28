@@ -1,6 +1,6 @@
-{ fetchurl, stdenv, which, pkgconfig, libxcb, xcbutilkeysyms, xcbutil,
-  xcbutilwm, libstartup_notification, libX11, pcre, libev, yajl,
-  xcb-util-cursor, coreutils, perl, pango, perlPackages, xdummy }:
+{ fetchurl, stdenv, which, pkgconfig, makeWrapper, libxcb, xcbutilkeysyms
+, xcbutil, xcbutilwm, libstartup_notification, libX11, pcre, libev, yajl
+, xcb-util-cursor, coreutils, perl, pango, perlPackages, xdummy }:
 
 stdenv.mkDerivation rec {
   name = "i3-${version}";
@@ -12,7 +12,7 @@ stdenv.mkDerivation rec {
   };
 
   buildInputs = [
-    which pkgconfig libxcb xcbutilkeysyms xcbutil xcbutilwm
+    which pkgconfig makeWrapper libxcb xcbutilkeysyms xcbutil xcbutilwm
     libstartup_notification libX11 pcre libev yajl xcb-util-cursor perl pango
     perlPackages.AnyEventI3 perlPackages.X11XCB perlPackages.IPCRun
     perlPackages.ExtUtilsPkgConfig perlPackages.TestMore perlPackages.InlineC
@@ -24,13 +24,20 @@ stdenv.mkDerivation rec {
 
   doCheck = stdenv.system == "x86_64-linux";
 
-  checkPhase = ''
+  checkPhase = stdenv.lib.optionalString (stdenv.system == "x86_64-linux")
+  ''
     ln -sf "${xdummy}/bin/xdummy" testcases/Xdummy
     (cd testcases && perl complete-run.pl -p 1)
     ! grep -q '^not ok' testcases/latest/complete-run.log
   '';
 
   configurePhase = "makeFlags=PREFIX=$out";
+
+  postInstall = ''
+    wrapProgram "$out/bin/i3-save-tree" --prefix PERL5LIB ":" "$PERL5LIB"
+    mkdir -p $out/man/man1
+    cp man/*.1 $out/man/man1
+  '';
 
   meta = with stdenv.lib; {
     description = "A tiling window manager";

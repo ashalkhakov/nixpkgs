@@ -10,6 +10,7 @@ let
     isExecutable = true;
     src = ./nixos-container.pl;
     perl = "${pkgs.perl}/bin/perl -I${pkgs.perlPackages.FileSlurp}/lib/perl5/site_perl";
+    su = "${pkgs.shadow.su}/bin/su";
     inherit (pkgs) utillinux;
   };
 
@@ -51,6 +52,14 @@ in
       description = ''
         Whether this NixOS machine is a lightweight container running
         in another NixOS system.
+      '';
+    };
+
+    boot.enableContainers = mkOption {
+      type = types.bool;
+      default = !config.boot.isContainer;
+      description = ''
+        Whether to enable support for nixos containers.
       '';
     };
 
@@ -111,6 +120,13 @@ in
               '';
             };
 
+            autoStart = mkOption {
+              type = types.bool;
+              default = false;
+              description = ''
+                Wether the container is automatically started at boot-time.
+              '';
+            };
           };
 
           config = mkMerge
@@ -157,7 +173,7 @@ in
   };
 
 
-  config = mkIf (!config.boot.isContainer) {
+  config = mkIf (config.boot.enableContainers) {
 
     systemd.services."container@" =
       { description = "Container '%i'";
@@ -187,7 +203,7 @@ in
         script =
           ''
             mkdir -p -m 0755 "$root/etc" "$root/var/lib"
-            mkdir -p -m 0700 "$root/var/lib/private"
+            mkdir -p -m 0700 "$root/var/lib/private" "$root/root"
             if ! [ -e "$root/etc/os-release" ]; then
               touch "$root/etc/os-release"
             fi
@@ -271,9 +287,12 @@ in
 
           NotifyAccess = "all";
 
-          # Note that on reboot, systemd-nspawn returns 10, so this
+          # Note that on reboot, systemd-nspawn returns 133, so this
           # unit will be restarted. On poweroff, it returns 0, so the
           # unit won't be restarted.
+          RestartForceExitStatus = "133";
+          SuccessExitStatus = "133";
+
           Restart = "on-failure";
 
           # Hack: we don't want to kill systemd-nspawn, since we call
@@ -302,10 +321,11 @@ in
                 LOCAL_ADDRESS=${cfg.localAddress}
               ''}
             ''}
+           ${optionalString cfg.autoStart ''
+             AUTO_START=1
+           ''}
           '';
       }) config.containers;
-
-    # FIXME: auto-start containers.
 
     # Generate /etc/hosts entries for the containers.
     networking.extraHosts = concatStrings (mapAttrsToList (name: cfg: optionalString (cfg.localAddress != null)

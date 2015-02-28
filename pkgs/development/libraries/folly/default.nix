@@ -1,16 +1,18 @@
-{ stdenv, fetchgit, autoreconfHook, boost, libevent, double_conversion, glog
-, google-gflags, python, libiberty }:
+{ stdenv, fetchFromGitHub, autoreconfHook, boost, libevent, double_conversion, glog
+, google-gflags, python, libiberty, openssl }:
 
 stdenv.mkDerivation rec {
-  name = "folly-12";
+  version = "0.22.0";
+  name = "folly-${version}";
 
-  src = fetchgit {
-    url = "https://github.com/facebook/folly";
-    rev = "8d3b079a75fe1a8cf5811f290642b4f494f13822";
-    sha256 = "005fa202aca29c3a6757ae3bb050a6e4e5e773a1439f5803257a5f9e3cc9bdb6";
+  src = fetchFromGitHub {
+    owner = "facebook";
+    repo = "folly";
+    rev = "v${version}";
+    sha256 = "12p7vbx73jmhf772nbqvd8imw4ihpi16cw6cwxq459r7qds4n0ca";
   };
 
-  buildInputs = [ libiberty boost.lib libevent double_conversion glog google-gflags ];
+  buildInputs = [ libiberty boost.lib libevent double_conversion glog google-gflags openssl ];
 
   nativeBuildInputs = [ autoreconfHook python boost ];
 
@@ -27,7 +29,8 @@ stdenv.mkDerivation rec {
     description = "A YAML parser and emitter for C++";
     homepage = https://code.google.com/p/yaml-cpp/;
     license = licenses.mit;
-    platforms = platforms.unix;
+    # 32bit is not supported: https://github.com/facebook/folly/issues/103
+    platforms = [ "x86_64-linux" ];
     maintainers = maintainers.abbradar;
   };
 }

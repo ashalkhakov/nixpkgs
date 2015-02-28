@@ -58,8 +58,8 @@ let
 
   efiImg = pkgs.runCommand "efi-image_eltorito" { buildInputs = [ pkgs.mtools ]; }
     ''
-      #Let's hope 10M is enough
-      dd bs=2048 count=5120 if=/dev/zero of="$out"
+      #Let's hope 15M is enough
+      dd bs=2048 count=7680 if=/dev/zero of="$out"
       ${pkgs.dosfstools}/sbin/mkfs.vfat "$out"
       mcopy -svi "$out" ${efiDir}/* ::
       mmd -i "$out" boot
@@ -176,7 +176,10 @@ in
     # UUID of the USB stick.  It would be nicer to write
     # `root=/dev/disk/by-label/...' here, but UNetbootin doesn't
     # recognise that.
-    boot.kernelParams = [ "root=LABEL=${config.isoImage.volumeID}" ];
+    boot.kernelParams =
+      [ "root=LABEL=${config.isoImage.volumeID}"
+        "boot.shell_on_fail"
+      ];
 
     fileSystems."/" =
       { fsType = "tmpfs";

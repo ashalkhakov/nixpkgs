@@ -1,8 +1,8 @@
-{ stdenv, fetchurl, fetchFromGitHub
+{ stdenv, lib, fetchurl, fetchFromGitHub
 , zlib, zlibSupport ? true
 , openssl, opensslSupport ? true
 , gdbm, gdbmSupport ? true
-, ncurses, readline, cursesSupport ? false
+, ncurses, readline, cursesSupport ? true
 , groff, docSupport ? false
 , libyaml, yamlSupport ? true
 , libffi, fiddleSupport ? true
@@ -50,18 +50,12 @@ stdenv.mkDerivation rec {
 
   enableParallelBuilding = true;
 
-  # Fix a build failure on systems with nix store optimisation.
-  # (The build process attempted to copy file a overwriting file b, where a and
-  # b are hard-linked, which results in cp returning a non-zero exit code.)
-  # https://github.com/NixOS/nixpkgs/issues/4266
-  postUnpack = ''rm "$sourceRoot/enc/unicode/name2ctype.h"'';
-
   patches = ops useRailsExpress [
-    "${patchSet}/patches/ruby/2.0.0/p481/01-zero-broken-tests.patch"
-    "${patchSet}/patches/ruby/2.0.0/p481/02-railsexpress-gc.patch"
-    "${patchSet}/patches/ruby/2.0.0/p481/03-display-more-detailed-stack-trace.patch"
-    "${patchSet}/patches/ruby/2.0.0/p481/04-show-full-backtrace-on-stack-overflow.patch"
-    "${patchSet}/patches/ruby/2.0.0/p481/05-fix-missing-c-return-event.patch"
+    "${patchSet}/patches/ruby/2.0.0/p481/railsexpress/01-zero-broken-tests.patch"
+    "${patchSet}/patches/ruby/2.0.0/p481/railsexpress/02-railsexpress-gc.patch"
+    "${patchSet}/patches/ruby/2.0.0/p481/railsexpress/03-display-more-detailed-stack-trace.patch"
+    "${patchSet}/patches/ruby/2.0.0/p481/railsexpress/04-show-full-backtrace-on-stack-overflow.patch"
+    "${patchSet}/patches/ruby/2.0.0/p481/railsexpress/05-fix-missing-c-return-event.patch"
   ];
 
   configureFlags = ["--enable-shared" ]
@@ -83,6 +77,12 @@ stdenv.mkDerivation rec {
 
     envHooks+=(addGemPath)
     EOF
+  '' + lib.optionalString useRailsExpress ''
+    rbConfig=$(find $out/lib/ruby -name rbconfig.rb)
+
+    # Prevent the baseruby from being included in the closure.
+    sed -i '/^  CONFIG\["BASERUBY"\]/d' $rbConfig
+    sed -i "s|'--with-baseruby=${baseruby}/bin/ruby'||" $rbConfig
   '';
 
   meta = {
@@ -97,7 +97,8 @@ stdenv.mkDerivation rec {
     minorVersion = "0";
     teenyVersion = "0";
     patchLevel = "481";
-    libPath = "lib/ruby/${majorVersion}.${minorVersion}";
-    gemPath = "lib/ruby/gems/${majorVersion}.${minorVersion}";
+    rubyEngine = "ruby";
+    libPath = "lib/${rubyEngine}/${majorVersion}.${minorVersion}.${teenyVersion}";
+    gemPath = "lib/${rubyEngine}/gems/${majorVersion}.${minorVersion}.${teenyVersion}";
   };
 }

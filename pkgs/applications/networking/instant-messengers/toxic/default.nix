@@ -1,17 +1,17 @@
-{ stdenv, fetchurl, autoconf, libtool, automake, libsodium, ncurses
+{ stdenv, fetchFromGitHub, autoconf, libtool, automake, libsodium, ncurses
 , libtoxcore, openal, libvpx, freealut, libconfig, pkgconfig }:
 
-let
-  version = "0.5.1";
-in stdenv.mkDerivation rec {
-  name = "toxic-${version}";
+stdenv.mkDerivation rec {
+  name = "toxic-dev-20150125";
 
-  src = fetchurl {
-    url = "https://github.com/Tox/toxic/archive/v${version}.tar.gz";
-    sha256 = "0zzfgwm17a4xcy9l0ll2pksp45mz6f4s3isdrgjpw1xibv9xnzcm";
+  src = fetchFromGitHub {
+    owner = "Tox";
+    repo = "toxic";
+    rev = "4badc983ea";
+    sha256 = "01zk6316v51f1zvp5ss53ay49h3nnaq5snlk0gxmsrmwg71bsnm6";
   };
 
-  makeFlags = [ "-Cbuild" "VERSION=${version}" "PREFIX=$(out)" ];
+  makeFlags = [ "-Cbuild" "PREFIX=$(out)" ];
   installFlags = [ "PREFIX=$(out)" ];
 
   buildInputs = [
@@ -21,10 +21,10 @@ in stdenv.mkDerivation rec {
     openal libvpx freealut
   ];
 
-  meta = {
+  meta = with stdenv.lib; {
     description = "Reference CLI for Tox";
-    license = stdenv.lib.licenses.gpl3Plus;
-    maintainers = with stdenv.lib.maintainers; [ viric ];
-    platforms = stdenv.lib.platforms.all;
+    license = licenses.gpl3Plus;
+    maintainers = with maintainers; [ viric jgeerds ];
+    platforms = platforms.all;
   };
 }

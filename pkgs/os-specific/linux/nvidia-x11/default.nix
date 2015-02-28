@@ -1,5 +1,5 @@
 { stdenv, fetchurl, kernel ? null, xlibs, zlib, perl
-, gtk, atk, pango, glib, gdk_pixbuf
+, gtk3, atk, pango, glib, gdk_pixbuf, cairo
 , # Whether to build the libraries only (i.e. not the kernel module or
   # nvidia-settings).  Used to support 32-bit binaries on 64-bit
   # Linux.
@@ -12,8 +12,8 @@ assert (!libsOnly) -> kernel != null;
 
 let
 
-  versionNumber = "340.32";
-
+  versionNumber = "346.35";
+  # Policy: use the highest stable version as the default (on our master).
   inherit (stdenv.lib) makeLibraryPath;
 in
 
@@ -26,12 +26,12 @@ stdenv.mkDerivation {
     if stdenv.system == "i686-linux" then
       fetchurl {
         url = "http://us.download.nvidia.com/XFree86/Linux-x86/${versionNumber}/NVIDIA-Linux-x86-${versionNumber}.run";
-        sha256 = "1xcm8czz4bmnlzkl3al58flw6jmbrg1y77cxjjdjqcsvbk1qj10x";
+        sha256 = "09fz8nydi8ip3yv7dmbwnpwvjql5wp582z57022ppb9hqwq3r9mv";
       }
     else if stdenv.system == "x86_64-linux" then
       fetchurl {
         url = "http://us.download.nvidia.com/XFree86/Linux-x86_64/${versionNumber}/NVIDIA-Linux-x86_64-${versionNumber}-no-compat32.run";
-        sha256 = "1nfrpx73817y1z0wkqqh02xjg65r0f05h9801mqm8ki2gxqv9vq0";
+        sha256 = "1z9a69a9xbcrz925mj02l2qaqcnhxzh2msbq4hf73p7x4h94ibkx";
       }
     else throw "nvidia-x11 does not support platform ${stdenv.system}";
 
@@ -42,12 +42,14 @@ stdenv.mkDerivation {
   dontStrip = true;
 
   glPath      = makeLibraryPath [xlibs.libXext xlibs.libX11 xlibs.libXrandr];
-  cudaPath    = makeLibraryPath [zlib stdenv.gcc.gcc];
+  cudaPath    = makeLibraryPath [zlib stdenv.cc.cc];
   openclPath  = makeLibraryPath [zlib];
-  allLibPath  = makeLibraryPath [xlibs.libXext xlibs.libX11 xlibs.libXrandr zlib stdenv.gcc.gcc];
+  allLibPath  = makeLibraryPath [xlibs.libXext xlibs.libX11 xlibs.libXrandr zlib stdenv.cc.cc];
 
-  programPath = optionalString (!libsOnly) (makeLibraryPath
-    [ gtk atk pango glib gdk_pixbuf xlibs.libXv ] );
+  # we don't support the gtk2 version
+  gtk3Path = optionalString (!libsOnly) (makeLibraryPath
+    [ gtk3 atk pango glib gdk_pixbuf cairo ] );
+  programPath = makeLibraryPath [ xlibs.libXv ];
 
   buildInputs = [ perl ];
 
