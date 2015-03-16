@@ -6948,11 +6948,18 @@ let
 
   mythes = callPackage ../development/libraries/mythes { };
 
-  nanomsg = callPackage ../development/libraries/nanomsg { };
-
-  ncurses = callPackage ../development/libraries/ncurses {
+  ncurses_5_4 = makeOverridable (import ../development/libraries/ncurses/5_4.nix) {
+    inherit fetchurl;
+    unicode = system != "i686-cygwin";
+    stdenv = if stdenv.isDarwin
+      then allStdenvs.stdenvNative
+      else stdenv;
+  };
+  ncurses_5_9 = makeOverridable (import ../development/libraries/ncurses) {
+    inherit fetchurl;
     unicode = system != "i686-cygwin";
   };
+  ncurses = ncurses_5_9;
 
   neon = callPackage ../development/libraries/neon {
     compressionSupport = true;

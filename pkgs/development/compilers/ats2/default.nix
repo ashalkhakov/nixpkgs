@@ -18,4 +18,6 @@ stdenv.mkDerivation rec {
     platforms   = stdenv.lib.platforms.linux;
     maintainers = [ stdenv.lib.maintainers.thoughtpolice ];
   };
+
+  platforms = stdenv.lib.platforms.all;
 }
