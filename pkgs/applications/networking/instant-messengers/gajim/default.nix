@@ -1,5 +1,5 @@
 { stdenv, fetchurl, python, intltool, pkgconfig, libX11, gtk
-, ldns, pyopenssl, pythonDBus, pythonPackages
+, ldns, pythonDBus, pythonPackages
 
 , enableJingle ? true, farstream ? null, gst_plugins_bad ? null
 ,                      libnice ? null
@@ -22,11 +22,11 @@ with stdenv.lib;
 
 stdenv.mkDerivation rec {
   name = "gajim-${version}";
-  version = "0.16";
+  version = "0.16.1";
 
   src = fetchurl {
     url = "http://www.gajim.org/downloads/0.16/gajim-${version}.tar.bz2";
-    sha256 = "14x15jwgl0c6vwj02ccpzmxr3fczp632mnj50cpklbaj4bxqvgbs";
+    sha256 = "1gp8mdn6sz2pks5irsf563zbz98ldqksfky84ga9fzqndmq35bi6";
   };
 
   patches = [
@@ -64,7 +64,7 @@ stdenv.mkDerivation rec {
     pythonPackages.sqlite3 pythonPackages.pyasn1
     pythonPackages.pyxdg
     pythonPackages.nbxmpp
-    pyopenssl pythonDBus
+    pythonPackages.pyopenssl pythonDBus
   ] ++ optionals enableJingle [ farstream gst_plugins_bad libnice ]
     ++ optional enableE2E pythonPackages.pycrypto
     ++ optional enableRST pythonPackages.docutils

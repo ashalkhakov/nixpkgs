@@ -1,20 +1,20 @@
-{ stdenv, fetchurl, perl, curl, bzip2, sqlite, openssl ? null
-, pkgconfig, boehmgc, perlPackages
+{ lib, stdenv, fetchurl, perl, curl, bzip2, sqlite, openssl ? null
+, pkgconfig, boehmgc, perlPackages, libsodium
 , storeDir ? "/nix/store"
 , stateDir ? "/nix/var"
 }:
 
 stdenv.mkDerivation rec {
-  name = "nix-1.8pre3866_6062b12";
+  name = "nix-1.9pre4074_e659978";
 
   src = fetchurl {
-    url = http://hydra.nixos.org/build/16392832/download/4/nix-1.8pre3866_6062b12.tar.xz;
-    sha256 = "2038e0285ee4690c80e220642794b02d611b81c578593042ab8557d30a0d0d3b";
+    url = "http://hydra.nixos.org/build/20175576/download/4/${name}.tar.xz";
+    sha256 = "51cafd9428cce907a735e37e5dd46f36218351175e458d0834b306d257760204";
   };
 
   nativeBuildInputs = [ perl pkgconfig ];
 
-  buildInputs = [ curl openssl sqlite ];
+  buildInputs = [ curl openssl sqlite ] ++ lib.optional stdenv.isLinux libsodium;
 
   propagatedBuildInputs = [ boehmgc ];
 
@@ -24,6 +24,7 @@ stdenv.mkDerivation rec {
   postUnpack =
     '' export CPATH="${bzip2}/include"
        export LIBRARY_PATH="${bzip2}/lib"
+       export CXXFLAGS="-Wno-error=reserved-user-defined-literal"
     '';
 
   configureFlags =
@@ -34,7 +35,6 @@ stdenv.mkDerivation rec {
       --with-www-curl=${perlPackages.WWWCurl}/${perl.libPrefix}
       --disable-init-state
       --enable-gc
-      CFLAGS=-O3 CXXFLAGS=-O3
     '';
 
   makeFlags = "profiledir=$(out)/etc/profile.d";
@@ -57,7 +57,6 @@ stdenv.mkDerivation rec {
         --with-www-curl=${perlPackages.WWWCurl}/${perl.libPrefix}
         --disable-init-state
         --enable-gc
-        CFLAGS=-O3 CXXFLAGS=-O3
       '' + stdenv.lib.optionalString (
           stdenv.cross ? nix && stdenv.cross.nix ? system
       ) ''--with-system=${stdenv.cross.nix.system}'';

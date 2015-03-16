@@ -20,6 +20,7 @@ with stdenv.lib;
 
 let
   majorVersion = "3.3";
+  pythonVersion = majorVersion;
   version = "${majorVersion}.6";
 
   buildInputs = filter (p: p != null) [
@@ -28,6 +29,7 @@ let
 in
 stdenv.mkDerivation {
   name = "python3-${version}";
+  pythonVersion = majorVersion;
   inherit majorVersion version;
 
   src = fetchurl {
@@ -81,6 +83,7 @@ stdenv.mkDerivation {
     isPy33 = true;
     is_py3k = true;  # deprecated
     sitePackages = "lib/${libPrefix}/site-packages";
+    interpreter = "${self}/bin/${executable}";
   };
 
   enableParallelBuilding = true;

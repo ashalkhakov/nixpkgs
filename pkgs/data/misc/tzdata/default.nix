@@ -1,6 +1,6 @@
 { stdenv, fetchurl }:
 
-let version = "2014i"; in
+let version = "2015a"; in
 
 stdenv.mkDerivation rec {
   name = "tzdata-${version}";
@@ -8,11 +8,11 @@ stdenv.mkDerivation rec {
   srcs =
     [ (fetchurl {
         url = "http://www.iana.org/time-zones/repository/releases/tzdata${version}.tar.gz";
-        sha256 = "0lv1i3ikibf9yn1l3hcy00x5ghwxn87k1myyp1cyr55psayk3wra";
+        sha256 = "0k4fy5x1813az0dwh82v5dhnvivfxxjin2szkgyfga00gn8r0965";
       })
       (fetchurl {
         url = "http://www.iana.org/time-zones/repository/releases/tzcode${version}.tar.gz";
-        sha256 = "10s7x24lh2vm3magl7dq2xs9pw47hhyaq6xpi6c4aiqdzdsi0nb2";
+        sha256 = "06fxf9yw39wcpqifxf3lr8cn64nlwznqcyhd0cs2z1c6y88snnw8";
       })
     ];
 

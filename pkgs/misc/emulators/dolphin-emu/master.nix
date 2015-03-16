@@ -4,11 +4,11 @@
 , pulseaudio ? null }:
 
 stdenv.mkDerivation rec {
-  name = "dolphin-emu-20141101";
+  name = "dolphin-emu-20150302";
   src = fetchgit {
     url = git://github.com/dolphin-emu/dolphin.git;
-    rev = "9daaf94f3c8caf71dab16c7e591ce7905c1416c4";
-    sha256 = "1n71by34mrgdxcr8c5bsbpy9azi62512knp5sjgzq6sfwzgy40d8";
+    rev = "cd8c37bc0792a492b59976eba10a3e54e0ea2842";
+    sha256 = "06cb89c97w86ffn2nls0jb69macd5lqz930fjyjjahk9njx164fv";
     fetchSubmodules = false;
   };
 
@@ -31,5 +31,8 @@ stdenv.mkDerivation rec {
     description = "Gamecube/Wii/Triforce emulator for x86_64 and ARM";
     license = stdenv.lib.licenses.gpl2;
     maintainers = with stdenv.lib.maintainers; [ MP2E ];
+    # x86_32 is an unsupported platform.
+    # Enable generic build if you really want a JIT-less binary.
+    platforms = [ "x86_64-linux" ];
   };
 }

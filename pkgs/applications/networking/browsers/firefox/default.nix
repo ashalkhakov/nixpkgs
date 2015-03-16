@@ -13,16 +13,16 @@
   enableOfficialBranding ? false
 }:
 
-assert stdenv.gcc ? libc && stdenv.gcc.libc != null;
+assert stdenv.cc ? libc && stdenv.cc.libc != null;
 
-let version = "33.1"; in
+let version = "36.0.1"; in
 
 stdenv.mkDerivation rec {
   name = "firefox-${version}";
 
   src = fetchurl {
     url = "http://ftp.mozilla.org/pub/mozilla.org/firefox/releases/${version}/source/firefox-${version}.source.tar.bz2";
-    sha1 = "bc87055d3b68e8458f07d0c04503b6aaed3771df";
+    sha1 = "cde80f5aee704827da43b9ca94a138a6c8a6c553";
   };
 
   buildInputs =
@@ -97,7 +97,7 @@ stdenv.mkDerivation rec {
   meta = {
     description = "Web browser";
     homepage = http://www.mozilla.com/en-US/firefox/;
-    maintainers = with lib.maintainers; [ eelco wizeman ];
+    maintainers = with lib.maintainers; [ eelco ];
     platforms = lib.platforms.linux;
   };
 

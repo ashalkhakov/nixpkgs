@@ -9,7 +9,7 @@ in
 
 composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed) version; in {
 
-  version = "5.4.34";
+  version = "5.4.38";
 
   name = "php-${version}";
 
@@ -41,8 +41,12 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
       };
 
       curl = {
-        configureFlags = ["--with-curl=${curl}" "--with-curlwrappers"];
+        configureFlags = ["--with-curl=${curl}"];
         buildInputs = [curl openssl];
+      };
+
+      curlWrappers = {
+        configureFlags = ["--with-curlwrappers"];
       };
 
       zlib = {
@@ -181,6 +185,14 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
         buildInputs = [freetds];
       };
 
+      zts = {
+        configureFlags = ["--enable-maintainer-zts"];
+      };
+
+      calendar = {
+        configureFlags = ["--enable-calendar"];
+      };
+
       /*
          php is build within this derivation in order to add the xdebug lines to the php.ini.
          So both Apache and command line php both use xdebug without having to configure anything.
@@ -199,6 +211,7 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
     bcmathSupport = config.php.bcmath or true;
     socketsSupport = config.php.sockets or true;
     curlSupport = config.php.curl or true;
+    curlWrappersSupport = config.php.curlWrappers or false;
     gettextSupport = config.php.gettext or true;
     pcntlSupport = config.php.pcntl or true;
     postgresqlSupport = config.php.postgresql or true;
@@ -219,6 +232,8 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
     ftpSupport = config.php.ftp or true;
     fpmSupport = config.php.fpm or true;
     mssqlSupport = config.php.mssql or (!stdenv.isDarwin);
+    ztsSupport = config.php.zts or false;
+    calendarSupport = config.php.calendar or false;
   };
 
   configurePhase = ''
@@ -243,15 +258,16 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
 
   src = fetchurl {
     url = "http://www.php.net/distributions/php-${version}.tar.bz2";
-    sha256 = "0d425zxka3m1l0ygsls4r56qy374rf6skl4ggim0k2y1y08fmm2p";
+    sha256 = "121ybn55c9f65r1mwiy4yks67bb6m5m5zwwx9y0vpjddryq7vwxb";
   };
 
-  meta = {
+  meta = with stdenv.lib; {
     description = "An HTML-embedded scripting language";
     homepage = http://www.php.net/;
     license = stdenv.lib.licenses.php301;
+    maintainers = with maintainers; [ globin ];
   };
 
-  patches = [ ./fix-5.4.patch ];
+  patches = [ ./fix-paths.patch ];
 
 })

@@ -1,13 +1,13 @@
 { stdenv, fetchurl, makeWrapper, jre, cpio, gawk, gnugrep, gnused, procps, swt, gtk2, glib, libXtst }:
 
-let version = "3.6.3";
+let version = "3.6.4";
 
 in stdenv.mkDerivation rec {
   name = "crashplan-${version}";
 
   crashPlanArchive = fetchurl {
     url = "http://download.crashplan.com/installs/linux/install/CrashPlan/CrashPlan_${version}_Linux.tgz";
-    sha256 = "0v01fzc62bxr6lpamnxg1nb7vh4a8ky6mahbq76kmjxfqv7q0mb0";
+    sha256 = "0xmzpxfm8vghk552jy167wg1nky1pp93dqds1p922hn73g0x5cv3";
   };
 
   srcs = [ crashPlanArchive ];
@@ -16,7 +16,7 @@ in stdenv.mkDerivation rec {
     description = "An online/offline backup solution";
     homepage = "http://www.crashplan.org";
     license = licenses.unfree;
-    maintainers = with maintainers; [ sztupi ];
+    maintainers = with maintainers; [ sztupi iElectric ];
   };
 
   buildInputs = [ makeWrapper cpio ];
@@ -25,7 +25,7 @@ in stdenv.mkDerivation rec {
 
   manifestdir = "${vardir}/manifest";
 
-  patches = [ ./CrashPlanEngine.patch ];
+  patches = [ ./CrashPlanEngine.patch ./CrashPlanDesktop.patch ];
 
   installPhase = ''
     mkdir $out
@@ -45,6 +45,7 @@ in stdenv.mkDerivation rec {
     install -D -m 644 run.conf $out/bin/run.conf
     install -D -m 755 scripts/CrashPlanDesktop $out/bin/CrashPlanDesktop
     install -D -m 755 scripts/CrashPlanEngine $out/bin/CrashPlanEngine
+    install -D -m 644 scripts/CrashPlan.desktop $out/share/applications/CrashPlan.desktop
 
     rm -r $out/log
     ln -s $vardir/log $out/log
@@ -72,6 +73,10 @@ in stdenv.mkDerivation rec {
       substituteInPlace $f --replace sed      ${gnused}/bin/sed
       substituteInPlace $f --replace grep     ${gnugrep}/bin/grep
     done
+    
+    substituteInPlace $out/share/applications/CrashPlan.desktop \
+      --replace /usr/local  $out \
+      --replace crashplan/skin skin
 
     wrapProgram $out/bin/CrashPlanDesktop --prefix LD_LIBRARY_PATH ":" "${gtk2}/lib:${glib}/lib:${libXtst}/lib"
   '';

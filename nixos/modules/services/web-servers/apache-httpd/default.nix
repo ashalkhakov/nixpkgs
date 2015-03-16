@@ -112,6 +112,8 @@ let
       "cache" "cache_disk"
       "slotmem_shm"
       "socache_shmcb"
+      # For compatibility with old configurations, the new module mod_access_compat is provided.
+      "access_compat"
     ]
     ++ (if mainCfg.multiProcessingModule == "prefork" then [ "cgi" ] else [ "cgid" ])
     ++ optional enableSSL "ssl"
@@ -169,6 +171,9 @@ let
 
     SSLRandomSeed startup builtin
     SSLRandomSeed connect builtin
+
+    SSLProtocol All -SSLv2 -SSLv3
+    SSLCipherSuite HIGH:MEDIUM:!aNULL:!MD5:!EXP
   '';
 
 
@@ -680,6 +685,7 @@ in
         serviceConfig.Type = "forking";
         serviceConfig.PIDFile = "${mainCfg.stateDir}/httpd.pid";
         serviceConfig.Restart = "always";
+        serviceConfig.RestartSec = "5s";
       };
 
   };

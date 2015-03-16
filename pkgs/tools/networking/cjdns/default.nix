@@ -1,27 +1,26 @@
 { stdenv, fetchFromGitHub, nodejs, which, python27, utillinux }:
 
 let
-  date = "20141023";
-  rev = "c7eed6b14688458e16fab368f68904e530651a30";
+  version = "15"; # see ${src}/util/version/Version.h
+  date = "20150207";
 in
 stdenv.mkDerivation {
-  name = "cjdns-${date}-${stdenv.lib.strings.substring 0 7 rev}";
+  name = "cjdns-${version}-${date}";
 
   src = fetchFromGitHub {
     owner = "cjdelisle";
     repo = "cjdns";
-    inherit rev;
-    sha256 = "11z8dk7byxh9pfv7mhfvnk465qln1g7z8c8f822623d59lwjpbs1";
+    rev = "0fc585e15e25b1bd39be24a534f47bb966485a4a";
+    sha256 = "090zx30bgfk6wyh10wbjqpkvjq9l30jc7fh2iagajsmpjs9iipqm";
   };
-
-  # Make the NixOS service work a little better.
-  patches = [ ./makekeys-sigpipe.patch ];
 
   buildInputs = [ which python27 nodejs ] ++
     # for flock
     stdenv.lib.optional stdenv.isLinux [ utillinux ];
 
-  buildPhase = "bash do";
+  buildPhase =
+    stdenv.lib.optionalString stdenv.isArm "Seccomp_NO=1 "
+    + "bash do";
   installPhase = ''
     installBin cjdroute makekeys privatetopublic publictoip6
     sed -i 's,/usr/bin/env node,'$(type -P node), \
@@ -29,7 +28,7 @@ stdenv.mkDerivation {
     sed -i 's,/usr/bin/env python,'$(type -P python), \
       $(find contrib -type f)
     mkdir -p $out/share/cjdns
-    cp -R contrib node_build node_modules $out/share/cjdns/
+    cp -R contrib tools node_build node_modules $out/share/cjdns/
   '';
 
   meta = with stdenv.lib; {

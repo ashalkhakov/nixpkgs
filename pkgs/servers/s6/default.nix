@@ -1,50 +1,36 @@
-{stdenv, fetchurl, skalibs, execline}:
+{ stdenv, execline, fetchgit, skalibs }:
 
 let
 
-  version = "1.1.3.2";
+  version = "2.0.1.0";
 
 in stdenv.mkDerivation rec {
 
   name = "s6-${version}";
 
-  src = fetchurl {
-    url = "http://www.skarnet.org/software/s6/${name}.tar.gz";
-    sha256 = "0djxdd3d3mlp63sjqqs0ilf8p68m86c1s98d82fl0kgaaibpsikp";
+  src = fetchgit {
+    url = "git://git.skarnet.org/s6";
+    rev = "refs/tags/v${version}";
+    sha256 = "1x7za0b1a2i6xn06grpb5j361s9bl4524bp5mz3zcdg8s9nil50d";
   };
 
-  buildInputs = [ skalibs execline ];
+  dontDisableStatic = true;
 
-  sourceRoot = "admin/${name}";
+  enableParallelBuilding = true;
 
-  configurePhase = ''
-    pushd conf-compile
-
-    printf "$out/bin"           > conf-install-command
-    printf "$out/include"       > conf-install-include
-    printf "$out/lib"           > conf-install-library
-    printf "$out/lib"           > conf-install-library.so
-    printf "$out/sysdeps"       > conf-install-sysdeps
-
-    # let nix builder strip things, cross-platform
-    truncate --size 0 conf-stripbins
-    truncate --size 0 conf-striplibs
-
-    printf "${skalibs}/sysdeps" > import
-    printf "%s\n%s" "${skalibs}/include" "${execline}/include" > path-include
-    printf "%s\n%s" "${skalibs}/lib"     "${execline}/lib"     > path-library
-
-    rm -f flag-slashpackage
-    touch flag-allstatic
-
-    popd
-  '';
+  configureFlags = [
+    "--with-sysdeps=${skalibs}/lib/skalibs/sysdeps"
+    "--with-include=${skalibs}/include"
+    "--with-include=${execline}/include"
+    "--with-lib=${skalibs}/lib"
+    "--with-lib=${execline}/lib"
+    "--with-dynlib=${skalibs}/lib"
+    "--with-dynlib=${execline}/lib"
+  ] ++ stdenv.lib.optional stdenv.isDarwin [ "--disable-shared" ];
 
   preBuild = ''
     substituteInPlace "src/daemontools-extras/s6-log.c" \
       --replace '"execlineb"' '"${execline}/bin/execlineb"'
-
-    patchShebangs src/sys
   '';
 
   meta = {

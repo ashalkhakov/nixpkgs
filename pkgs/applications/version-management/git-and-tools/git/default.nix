@@ -1,6 +1,6 @@
 { fetchurl, stdenv, curl, openssl, zlib, expat, perl, python, gettext, cpio, gnugrep, gzip
 , asciidoc, texinfo, xmlto, docbook2x, docbook_xsl, docbook_xml_dtd_45
-, libxslt, tcl, tk, makeWrapper
+, libxslt, tcl, tk, makeWrapper, libiconv
 , svnSupport, subversionClient, perlLibs, smtpPerlLibs
 , guiSupport
 , withManual ? true
@@ -9,11 +9,8 @@
 }:
 
 let
-
-  version = "2.1.3";
-
+  version = "2.3.2";
   svn = subversionClient.override { perlBindings = true; };
-
 in
 
 stdenv.mkDerivation {
@@ -21,12 +18,17 @@ stdenv.mkDerivation {
 
   src = fetchurl {
     url = "https://www.kernel.org/pub/software/scm/git/git-${version}.tar.xz";
-    sha256 = "0mvgvr2hz25p49dhhizcw9591f2h17y2699mpmndis3kzap0c6zy";
+    sha256 = "09gqijsjfnxlbsxbxzlvllg37bfs9f4jwa2plqsanmba09i89sqq";
   };
 
-  patches = [ ./docbook2texi.patch ./symlinks-in-bin.patch ./cert-path.patch ];
+  patches = [
+    ./docbook2texi.patch
+    ./symlinks-in-bin.patch
+    ./cert-path.patch
+    ./ssl-cert-file.patch
+  ];
 
-  buildInputs = [curl openssl zlib expat gettext cpio makeWrapper]
+  buildInputs = [curl openssl zlib expat gettext cpio makeWrapper libiconv]
     ++ stdenv.lib.optionals withManual [ asciidoc texinfo xmlto docbook2x
          docbook_xsl docbook_xml_dtd_45 libxslt ]
     ++ stdenv.lib.optionals guiSupport [tcl tk];
@@ -55,7 +57,7 @@ stdenv.mkDerivation {
       # Install git-subtree.
       pushd contrib/subtree
       make
-      make install install-doc
+      make install ${stdenv.lib.optionalString withManual "install-doc"}
       popd
       rm -rf contrib/subtree
 
@@ -142,6 +144,6 @@ stdenv.mkDerivation {
     '';
 
     platforms = stdenv.lib.platforms.all;
-    maintainers = with stdenv.lib.maintainers; [ simons the-kenny ];
+    maintainers = with stdenv.lib.maintainers; [ simons the-kenny wmertens ];
   };
 }

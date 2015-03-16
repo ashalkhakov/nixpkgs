@@ -18,7 +18,7 @@ let
       };
     };
 
-  grsecPatch = { grversion ? "3.0", kversion, revision, branch, sha256 }:
+  grsecPatch = { grversion ? "3.1", kversion, revision, branch, sha256 }:
     { name = "grsecurity-${grversion}-${kversion}";
       inherit grversion kversion revision;
       patch = fetchurl {
@@ -31,6 +31,11 @@ let
 in
 
 rec {
+
+  bridge_stp_helper =
+    { name = "bridge-stp-helper";
+      patch = ./bridge-stp-helper.patch;
+    };
 
   no_xsave =
     { name = "no-xsave";
@@ -60,21 +65,26 @@ rec {
   };
 
   grsecurity_stable = grsecPatch
-    { kversion  = "3.14.23";
-      revision  = "201411091053";
+    { kversion  = "3.14.35";
+      revision  = "201503092203";
       branch    = "stable";
-      sha256    = "0fs084zggxvqswjs296bnvlvplalg7r60zbccmgrr2j1xa7s4pfl";
+      sha256    = "0l8m0ixh0qcgwy8vcmfl8pal93wc03ahc3ci3sca79nx33a050v9";
     };
 
   grsecurity_unstable = grsecPatch
-    { kversion  = "3.17.2";
-      revision  = "201411091054";
+    { kversion  = "3.19.1";
+      revision  = "201503122205";
       branch    = "test";
-      sha256    = "1yy9ig7ih8k13wl40fzdbhm6avjxw66nm99falzyr4j42k0zx77i";
+      sha256    = "0g22wfmlim163gmsl4cn4nq4zif8zni3cpkk7cr93z92r9kafp4y";
     };
 
   grsec_fix_path =
     { name = "grsec-fix-path";
       patch = ./grsec-path.patch;
+    };
+
+  crc_regression =
+    { name = "crc-backport-regression";
+      patch = ./crc-regression.patch;
     };
 }

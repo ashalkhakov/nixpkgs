@@ -1,8 +1,8 @@
-{ stdenv, fetchurl, fetchFromGitHub
+{ stdenv, lib, fetchurl, fetchFromGitHub
 , zlib, zlibSupport ? true
 , openssl, opensslSupport ? true
 , gdbm, gdbmSupport ? true
-, ncurses, readline, cursesSupport ? false
+, ncurses, readline, cursesSupport ? true
 , groff, docSupport ? false
 , libyaml, yamlSupport ? true
 , ruby_1_9_3, autoreconfHook, bison, useRailsExpress ? true
@@ -48,12 +48,6 @@ stdenv.mkDerivation rec {
 
   enableParallelBuilding = true;
 
-  # Fix a build failure on systems with nix store optimisation.
-  # (The build process attempted to copy file a overwriting file b, where a and
-  # b are hard-linked, which results in cp returning a non-zero exit code.)
-  # https://github.com/NixOS/nixpkgs/issues/4266
-  postUnpack = ''rm "$sourceRoot/enc/unicode/name2ctype.h"'';
-
   patches = [
     ./ruby19-parallel-install.patch
     ./bitperfect-rdoc.patch
@@ -86,6 +80,8 @@ stdenv.mkDerivation rec {
 
   installFlags = stdenv.lib.optionalString docSupport "install-doc";
 
+  CFLAGS = stdenv.lib.optionalString stdenv.isDarwin "-mmacosx-version-min=10.7";
+
   postInstall = ''
     # Bundler tries to create this directory
     mkdir -pv $out/${passthru.gemPath}
@@ -97,6 +93,12 @@ stdenv.mkDerivation rec {
 
     envHooks+=(addGemPath)
     EOF
+  '' + lib.optionalString useRailsExpress ''
+    rbConfig=$(find $out/lib/ruby -name rbconfig.rb)
+
+    # Prevent the baseruby from being included in the closure.
+    sed -i '/^  CONFIG\["BASERUBY"\]/d' $rbConfig
+    sed -i "s|'--with-baseruby=${baseruby}/bin/ruby'||" $rbConfig
   '';
 
   meta = {
@@ -112,7 +114,8 @@ stdenv.mkDerivation rec {
     minorVersion = "9";
     teenyVersion = "3";
     patchLevel = "547";
-    libPath = "lib/ruby/${majorVersion}.${minorVersion}";
-    gemPath = "lib/ruby/gems/${majorVersion}.${minorVersion}";
+    rubyEngine = "ruby";
+    libPath = "lib/${rubyEngine}/${majorVersion}.${minorVersion}.${teenyVersion}";
+    gemPath = "lib/${rubyEngine}/gems/${majorVersion}.${minorVersion}.${teenyVersion}";
   };
 }

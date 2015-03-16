@@ -17,11 +17,11 @@ let
 
   knownHosts = map (h: getAttr h cfg.knownHosts) (attrNames cfg.knownHosts);
 
-  knownHostsFile = pkgs.writeText "ssh_known_hosts" (
-    flip concatMapStrings knownHosts (h: ''
-      ${concatStringsSep "," h.hostNames} ${if h.publicKey != null then h.publicKey else readFile h.publicKeyFile}
-    '')
-  );
+  knownHostsText = flip (concatMapStringsSep "\n") knownHosts
+    (h:
+      concatStringsSep "," h.hostNames + " "
+      + (if h.publicKey != null then h.publicKey else readFile h.publicKeyFile)
+    );
 
   userOptions = {
 
@@ -195,11 +195,13 @@ in
         default =
           [ { path = "/etc/ssh/ssh_host_dsa_key";
               type = "dsa";
-              bits = 1024;
             }
             { path = "/etc/ssh/ssh_host_ecdsa_key";
               type = "ecdsa";
               bits = 521;
+            }
+            { path = "/etc/ssh/ssh_host_ed25519_key";
+              type = "ed25519";
             }
           ];
         description = ''
@@ -254,7 +256,10 @@ in
             description = ''
               The public key data for the host. You can fetch a public key
               from a running SSH server with the <command>ssh-keyscan</command>
-              command.
+              command. The public key should not include any host names, only
+              the key type and the key itself. It is allowed to add several
+              lines here, each line will be treated as type/key pair and the
+              host names will be prepended to each line.
             '';
           };
           publicKeyFile = mkOption {
@@ -264,7 +269,9 @@ in
               The path to the public key file for the host. The public
               key file is read at build time and saved in the Nix store.
               You can fetch a public key file from a running SSH server
-              with the <command>ssh-keyscan</command> command.
+              with the <command>ssh-keyscan</command> command. The content
+              of the file should follow the same format as described for
+              the <literal>publicKey</literal> option.
             '';
           };
         };
@@ -294,7 +301,7 @@ in
       { source = "${cfgc.package}/etc/ssh/moduli";
         target = "ssh/moduli";
       }
-      { source = knownHostsFile;
+      { text = knownHostsText;
         target = "ssh/ssh_known_hosts";
       }
     ];
@@ -318,7 +325,7 @@ in
 
                 ${flip concatMapStrings cfg.hostKeys (k: ''
                   if ! [ -f "${k.path}" ]; then
-                      ssh-keygen -t "${k.type}" -b "${toString k.bits}" -f "${k.path}" -N ""
+                      ssh-keygen -t "${k.type}" ${if k ? bits then "-b ${toString k.bits}" else ""} -f "${k.path}" -N ""
                   fi
                 '')}
               '';
@@ -373,6 +380,8 @@ in
         Protocol 2
 
         UsePAM yes
+
+        UsePrivilegeSeparation sandbox
 
         AddressFamily ${if config.networking.enableIPv6 then "any" else "inet"}
         ${concatMapStrings (port: ''

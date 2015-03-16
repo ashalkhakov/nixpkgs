@@ -20,7 +20,7 @@
 # For screenshots
 , libpngSupport ? true, libpng ? null
 # for Youtube support
-, quviSupport ? false, libquvi ? null
+, youtubeSupport ? false, youtubeDL ? null
 , cacaSupport ? false, libcaca ? null
 , vaapiSupport ? false, libva ? null
 }:
@@ -41,7 +41,7 @@ assert jackaudioSupport -> jack2 != null;
 assert pulseSupport -> pulseaudio != null;
 assert bs2bSupport -> libbs2b != null;
 assert libpngSupport -> libpng != null;
-assert quviSupport -> libquvi != null;
+assert youtubeSupport -> youtubeDL != null;
 assert cacaSupport -> libcaca != null;
 
 # Purity problem: Waf needed to be is downloaded by bootstrap.py
@@ -50,23 +50,24 @@ assert cacaSupport -> libcaca != null;
 
 let
   waf = fetchurl {
-    url = http://ftp.waf.io/pub/release/waf-1.7.16;
-    sha256 = "b64dc26c882572415fd450b745006107965f3fe17b357e3eb43d6676c9635a61";
+    url = http://ftp.waf.io/pub/release/waf-1.8.5;
+    sha256 = "0gh266076pd9fzwkycskyd3kkv2kds9613blpxmn9w4glkiwmmh5";
   };
 
 in
 
+with stdenv.lib;
 stdenv.mkDerivation rec {
   name = "mpv-${version}";
-  version = "0.6.1";
+  version = "0.8.2";
 
   src = fetchurl {
     url = "https://github.com/mpv-player/mpv/archive/v${version}.tar.gz";
-    sha256 = "03vzsvvb1dvm4rn70m97fdbzhlqj9crk7zpvcp00bcl956xjfc9s";
+    sha256 = "19vlh2bzgf2vp1a4887xj7cmnhb42sc0cbqrdya4mck8yr5r6rd5";
   };
 
-  buildInputs = with stdenv.lib;
-    [ waf python3 lua perl freetype pkgconfig ffmpeg libass docutils which libpthreadstubs lua5_sockets ]
+  buildInputs = 
+    [ python3 lua perl freetype pkgconfig ffmpeg libass docutils which libpthreadstubs lua5_sockets ]
     ++ optionals x11Support [ libX11 libXext mesa libXxf86vm ]
     ++ optional alsaSupport alsaLib
     ++ optional xvSupport libXv
@@ -82,7 +83,7 @@ stdenv.mkDerivation rec {
     ++ optional speexSupport speex
     ++ optional bs2bSupport libbs2b
     ++ optional libpngSupport libpng
-    ++ optional quviSupport libquvi
+    ++ optional youtubeSupport youtubeDL
     ++ optional sdl2Support SDL2
     ++ optional cacaSupport libcaca
     ++ optional vaapiSupport libva
@@ -120,12 +121,11 @@ stdenv.mkDerivation rec {
     '';
     homepage = http://mpv.io;
     license = licenses.gpl2Plus;
-    maintainers = [ maintainers.AndersonTorres ];
+    maintainers = with stdenv.lib.maintainers; [ AndersonTorres fuuzetsu ];
     platforms = platforms.linux;
   };
 }
 
 # TODO: Wayland support
-# TODO: investigate libquvi problems (related to Youtube support)
 # TODO: investigate caca support
 # TODO: investigate lua5_sockets bug
