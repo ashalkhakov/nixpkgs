@@ -4461,7 +4461,7 @@ let
   mesos = callPackage ../applications/networking/cluster/mesos {
     sasl = cyrus_sasl;
     inherit (pythonPackages) python boto setuptools distutils-cfg wrapPython;
-    pythonProtobuf = pythonPackages.protobuf;
+    pythonProtobuf = pythonPackages.protobuf2_5;
   };
 
   mesos-dns = callPackage ../servers/dns/mesos-dns { };
@@ -8568,6 +8568,13 @@ let
     perl = perl516; # ${perl}/.../CORE/handy.h:124:34: error: 'bool' undeclared
   };
 
+  apparmor_2_9 = callPackage ../os-specific/linux/apparmor/2.9 { };
+  libapparmor = apparmor_2_9.libapparmor;
+  apparmor-pam = apparmor_2_9.apparmor-pam;
+  apparmor-parser = apparmor_2_9.apparmor-parser;
+  apparmor-profiles = apparmor_2_9.apparmor-profiles;
+  apparmor-utils = apparmor_2_9.apparmor-utils;
+
   atop = callPackage ../os-specific/linux/atop { };
 
   audit = callPackage ../os-specific/linux/audit { };
@@ -9836,6 +9843,8 @@ let
   batik = callPackage ../applications/graphics/batik { };
 
   batti = callPackage ../applications/misc/batti { };
+
+  cbatticon = callPackage ../applications/misc/cbatticon { };
 
   bazaar = callPackage ../applications/version-management/bazaar { };
 
